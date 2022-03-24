@@ -8,24 +8,23 @@ physicsClient = p.connect(p.GUI) #or p.DIRECT for non-graphical version
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.setGravity(0,0,0) #no gravity
 
-p.setPhysicsEngineParameter(
-            fixedTimeStep= .25,
-            numSolverIterations=100,
-            enableFileCaching=0,
+p.setPhysicsEngineParameter(fixedTimeStep= .25, 
+            numSolverIterations=100, 
+            enableFileCaching=0, 
             numSubSteps=1,
             solverResidualThreshold=1e-10,
-            # erp=0.0,
-            contactERP=0.0,
-            frictionERP=0.0,
-        )
+            #erp=0.0,
+            contactERP=0.0, frictionERP=0.0,
+            reportSolverAnalytics = 1)
 
 planeId = p.loadURDF("plane.urdf")
 
-boxId = p.loadSDF("/Users/andreachacon/mouse_biomechanics_paper/data/models/sdf/mouse.sdf", globalScaling = 25) #modify absolute path
-mouseId = boxId[0]
+mouseId = p.loadSDF("/files/mouse_with_joint_limits.sdf", globalScaling = 25)[0] #if all files are downloaded, use relative path
+#mouseId = p.loadSDF("/Users/andreachacon/mouse_biomechanics_paper/data/models/sdf/right_forelimb.sdf", globalScaling = 100)[0] # only arm
 num_joints = p.getNumJoints(mouseId) #225
 model_offset = (0.0, 0.0, 1.2) #z position modified with global scaling
-pose_file = "/Users/andreachacon/mouse_biomechanics_paper/data/config/hind_limb_default_pose_bullet.yaml" #modify absolute path
+#model_offset = (-.7, -6,4.4) # for arm only
+pose_file = "files/default_pose.yaml" 
 
 def initialize_joint_list(num_joints):
     joint_list =[]
@@ -55,34 +54,36 @@ def generate_name_to_joint_id_dict(mouseId):
         name_Dictionary[p.getJointInfo(mouseId, i)[1].decode('UTF-8')] = i
     return name_Dictionary
 
-jointId_dict = generate_name_to_joint_id_dict(mouseId)
-print(jointId_dict)
-
 def initialize_position(pose_file, joint_list):
     with open(pose_file) as stream:
         data = yaml.load(stream, Loader=yaml.SafeLoader)
         data = {k.lower(): v for k, v in data.items()}
-    #print(data)
     for joint in joint_list:
-        #print(data.get(p.getJointInfo(mouseId, joint)[1]))
         joint_name =p.getJointInfo(mouseId, joint)[1] 
         _pose = np.deg2rad(data.get(p.getJointInfo(mouseId, joint)[1].decode('UTF-8').lower(), 0))#decode removes b' prefix
-        #print(p.getJointInfo(mouseId, joint)[1].decode('UTF-8').lower(), _pose)
         p.resetJointState(mouseId, joint, targetValue=_pose)
 
-joint_list = initialize_joint_list(num_joints)
-#print(joint_list)
-joint_dictionary = generate_joint_id_to_name_dict(mouseId)
-p.resetBasePositionAndOrientation(mouseId, model_offset, p.getQuaternionFromEuler([0., 0., 80]))
-initialize_position(pose_file, joint_list)
+#jointId_dict = generate_name_to_joint_id_dict(mouseId)
+#joint_list = initialize_joint_list(num_joints)
+#joint_dictionary = generate_joint_id_to_name_dict(mouseId)
+p.resetBasePositionAndOrientation(mouseId, model_offset, p.getQuaternionFromEuler([0, 0, 80.2]))
+#initialize_position(pose_file, joint_list)
 
+p.setJointMotorControlArray(
+            mouseId,
+            np.arange(num_joints),
+            p.VELOCITY_CONTROL,
+            targetVelocities=np.zeros((num_joints,)),
+            forces=np.zeros((num_joints,))
+        )
 #the following should be moved to a main/simulation file
-p.setRealTimeSimulation(0)
-p.enableJointForceTorqueSensor(mouseId, 104, 1)
+
+#print(p.getJointInfo(mouseId, 107))
+#p.enableJointForceTorqueSensor(mouseId, 106, 1)
 for i in range (10000):
-    #posObj = p.getJointState(mouseId, 104)
+    #posObj = p.getJointState(mouseId, 106) #not working
     #print(posObj)
-    #p.setJointMotorControl2(mouseId, 104, p.TORQUE_CONTROL, (.25), force = 2)
+    #p.setJointMotorControl2(mouseId, 105, p.TORQUE_CONTROL, force = .002)
     #forces = [.25, .25, .25, .25, .25, .25, .25]
     #p.setJointMotorControlArray(mouseId, arm_indexes, p.TORQUE_CONTROL, forces = forces)
     p.stepSimulation()
