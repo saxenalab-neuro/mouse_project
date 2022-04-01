@@ -19,7 +19,7 @@ p.setPhysicsEngineParameter(fixedTimeStep= .25,
 
 planeId = p.loadURDF("plane.urdf")
 
-mouseId = p.loadSDF("/files/mouse_with_joint_limits.sdf", globalScaling = 25)[0] #if all files are downloaded, use relative path
+mouseId = p.loadSDF("/files/mouse_with_joint_limits.sdf", globalScaling = 25)[0]
 #mouseId = p.loadSDF("/Users/andreachacon/mouse_biomechanics_paper/data/models/sdf/right_forelimb.sdf", globalScaling = 100)[0] # only arm
 num_joints = p.getNumJoints(mouseId) #225
 model_offset = (0.0, 0.0, 1.2) #z position modified with global scaling
