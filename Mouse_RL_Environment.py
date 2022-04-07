@@ -34,17 +34,16 @@ def sph2cart(az, el, r):
     z = r * np.sin(el)
     return x, y, z
 
-class Mouse_Env(gym.Env):
-
-    def __init__(self, model_path, frame_skip, mouseId):
+class PyBulletEnv(gym.env):
+    def __init__(self, modelId, frame_skip):
         self.frame_skip= frame_skip
-        self.model = mouseId 
+        self.model = modelId
 
         #using point in space: theta, rho, phi
         theta = np.pi #FIGURE OUT STARTING POSITION
         rho = 0 #FIGURE OUT STARTING POSITION
         phi = 0 #FIGURE OUT STARTING POSITION
-        target_pos = [theta, rho, phi]
+        self.target_pos = [theta, rho, phi]
 
         #Meta parameters for the simulation
         self.n_fixedsteps= 20
@@ -53,21 +52,8 @@ class Mouse_Env(gym.Env):
         self._max_episode_steps= 1000   #Do not matter. It is being set in the main.py where the total number of steps are being changed.
         self.threshold = .03
 
-    pose_file = "/files/default_pose.yaml"
-    def resetPosition(self, pose_file): 
-        joint_list = []
-        for joint in range(p.getNumJoints(self, )):
-            joint_list.append(joint)
-        with open(pose_file) as stream:
-            data = yaml.load(stream, Loader=yaml.SafeLoader)
-            data = {k.lower(): v for k, v in data.items()}
-    #print(data)
-        for joint in joint_list:
-            #print(data.get(p.getJointInfo(boxId, joint)[1]))
-            joint_name =p.getJointInfo(self, joint)[1] 
-            _pose = np.deg2rad(data.get(p.getJointInfo(self, joint)[1].decode('UTF-8').lower(), 0))#decode removes b' prefix
-            #print(p.getJointInfo(boxId, joint)[1].decode('UTF-8').lower(), _pose)
-            p.resetJointState(self, joint, targetValue=_pose)
+    def reset_model(self):
+        raise NotImplementedError
 
     def reset(self):
         self.istep= 0
@@ -75,6 +61,28 @@ class Mouse_Env(gym.Env):
         self.threshold= self.threshold_user
         self.resetPosition()
         return self
+
+
+class Mouse_Env(PyBulletEnv):
+
+    def __init__(self, mouseId, frame_skip):
+        PyBulletEnv.__init__(self, mouseId, frame_skip)
+
+    pose_file = "/files/default_pose.yaml"
+    def reset_model(self, pose_file): 
+        joint_list = []
+        for joint in range(p.getNumJoints(self, )):
+            joint_list.append(joint)
+        with open(pose_file) as stream:
+            data = yaml.load(stream, Loader=yaml.SafeLoader)
+            data = {k.lower(): v for k, v in data.items()}
+            #print(data)
+        for joint in joint_list:
+            #print(data.get(p.getJointInfo(boxId, joint)[1]))
+            joint_name =p.getJointInfo(self, joint)[1] 
+            _pose = np.deg2rad(data.get(p.getJointInfo(self, joint)[1].decode('UTF-8').lower(), 0))#decode removes b' prefix
+            #print(p.getJointInfo(boxId, joint)[1].decode('UTF-8').lower(), _pose)
+            p.resetJointState(self, joint, targetValue=_pose)
 
     def reward(self): 
         hand_pos = p.getLinkState(self.model, 112)[0] #(x, y, z)
@@ -133,8 +141,6 @@ class Mouse_Env(gym.Env):
             p.setJointMotorControl(self.model, x, p.TORQUE_CONTROL, force = .002)
             #THIS IS TEMPORARY, NEED TO FIGURE OUT WHAT WORKS
 
-
-
     def step(self, action):
         self.istep += 1
 
@@ -158,15 +164,11 @@ class Mouse_Env(gym.Env):
 
         return final_reward, done
         #get reward
-        #update target position
-        #update joints
-        #check steps, etc.
         #need to figure out how to edit torque here
     
 
 #TO_DO:
-# probably need to add camera 
-# add super class !!!
+# probably need to add camera at some point
 # add initialization of neural networks when written
 # play with threshold
 # add maximums for circular motion
