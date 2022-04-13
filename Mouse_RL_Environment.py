@@ -6,10 +6,17 @@ import numpy as np
 import itertools
 import torch
 import pybullet as p
-import pybullet_envs
+import pybullet_data
 import yaml
+from model_utils import cart2sph
+from model_utils import sph2cart
 
-arm_indexes = [104, 105, 106, 107, 108, 110, 111, 112]
+file_path = "/files/mouse_with_joint_limits.sdf"
+pose_file = "files/locomotion_pose.yaml"
+
+model_offset = (0.0, 0.0, 1.2) #z position modified with global scaling
+
+ctrl = [104, 105, 106, 107, 108, 110, 111]
 #RShoulder_rotation - 104
 #RShoulder_adduction - 105
 #RShoulder_flexion - 106
@@ -19,69 +26,88 @@ arm_indexes = [104, 105, 106, 107, 108, 110, 111, 112]
 #RWrist_flexion - 111
 #RMetacarpus1_flextion - 112, use link (carpus) for pos
 
-#helper functions, possibly to be added to a util file
-def cart2sph(x, y, z):
-    hxy = np.hypot(x, y)
-    r = np.hypot(hxy, z) #rho
-    el = np.arctan2(z, hxy) #theta
-    az = np.arctan2(y, x) #phi
-    return az, el, r
-
-def sph2cart(az, el, r):
-    rcos_theta = r * np.cos(el)
-    x = rcos_theta * np.cos(az)
-    y = rcos_theta * np.sin(az)
-    z = r * np.sin(el)
-    return x, y, z
-
-class PyBulletEnv(gym.env):
-    def __init__(self, modelId, frame_skip):
+class PyBulletEnv(gym.Env):
+    def __init__(self, model_path, frame_skip):
+        #####BUILDS SERVER AND LOADS MODEL#####
+        self.client = p.connect(p.GUI)
+        p.setAdditionalSearchPath(pybullet_data.getDataPath())
+        p.setGravity(0,0,0) #no gravity
+        self.plane = p.loadURDF("plane.urdf")
+        self.model = p.loadSDF(model_path, globalScaling = 25)[0]# resizes
         self.frame_skip= frame_skip
-        self.model = modelId
+        p.resetBasePositionAndOrientation(self.model, model_offset, p.getQuaternionFromEuler([0, 0, 80.2]))
+        
+        #####TARGET POSITION USING POINT IN SPACE: theta, rho, phi#####
+        ###theta,rho,phi for initializing
+        #target_pos for updating
+        self.theta = np.pi #FIGURE OUT STARTING POSITION
+        self.rho = 0 #FIGURE OUT STARTING POSITION
+        self.phi = 0 #FIGURE OUT STARTING POSITION
+        self.target_pos = [self.theta, self.rho, self.phi]
 
-        #using point in space: theta, rho, phi
-        theta = np.pi #FIGURE OUT STARTING POSITION
-        rho = 0 #FIGURE OUT STARTING POSITION
-        phi = 0 #FIGURE OUT STARTING POSITION
-        self.target_pos = [theta, rho, phi]
-
-        #Meta parameters for the simulation
+        #####META PARAMETERS FOR SIMULATION#####
         self.n_fixedsteps= 20
         self.timestep_limit= (1319 * 1) + self.n_fixedsteps
         # self._max_episode_steps= self.timestep_limit/ 2
         self._max_episode_steps= 1000   #Do not matter. It is being set in the main.py where the total number of steps are being changed.
-        self.threshold = .03
+        self.threshold = .03 #CAN BE EDITED
 
+        #initialize neural networks here
+
+        #self.seed()
+
+    #def seed(self, seed=None):
+     #   self.np_random, seed = seeding.np_random(seed)
+      #  return [seed]
+
+    def get_ids(self):
+        return self.client, self.model
+    
+    #####OVERWRITTEN IN CHILD CLASS#####
     def reset_model(self):
         raise NotImplementedError
 
     def reset(self):
         self.istep= 0
-        self.theta= np.pi
+        self.theta= np.pi#FIND STARTING POS
+        self.rho = 0 #FIND STARTING POS
+        self.phi = 0 #FIND STARTING POS
+        self.target_pos = [self.theta, self.rho, self.phi]
         self.threshold= self.threshold_user
-        self.resetPosition()
-        return self
+        self.reset_model()
 
+    def do_simulation(self, ctrl, n_frames, forcesArray):
+        self.ctrl = ctrl
+        for _ in range(n_frames):
+            p.setJointMotorControlArray(self.model, self.ctrl, p.TORQUE_CONTROL, forces = forcesArray)
+            p.stepSimulation()
+
+    def get_cost(self, action):
+        scaler= 1/50
+        act = np.array(action)
+        cost = scaler * np.sum(np.abs(act))
+        return cost
+
+    #####DISCONNECTS SERVER#####
+    def close(self):
+        p.disconnect(self.client)
 
 class Mouse_Env(PyBulletEnv):
 
-    def __init__(self, mouseId, frame_skip):
-        PyBulletEnv.__init__(self, mouseId, frame_skip)
+    def __init__(self, model_path, frame_skip):
+        PyBulletEnv.__init__(self, model_path, frame_skip)
 
-    pose_file = "/files/default_pose.yaml"
     def reset_model(self, pose_file): 
         joint_list = []
-        for joint in range(p.getNumJoints(self, )):
+        for joint in range(p.getNumJoints(self.model)):
             joint_list.append(joint)
         with open(pose_file) as stream:
             data = yaml.load(stream, Loader=yaml.SafeLoader)
             data = {k.lower(): v for k, v in data.items()}
             #print(data)
         for joint in joint_list:
-            #print(data.get(p.getJointInfo(boxId, joint)[1]))
             joint_name =p.getJointInfo(self, joint)[1] 
             _pose = np.deg2rad(data.get(p.getJointInfo(self, joint)[1].decode('UTF-8').lower(), 0))#decode removes b' prefix
-            #print(p.getJointInfo(boxId, joint)[1].decode('UTF-8').lower(), _pose)
             p.resetJointState(self, joint, targetValue=_pose)
 
     def reward(self): 
@@ -95,8 +121,6 @@ class Mouse_Env(PyBulletEnv):
         if d_x > self.threshold or d_y > self.threshold or d_z > self.threshold:
             return -5
 
-
-        #can play around with these functions later
         r_x= 1/(1000**d_x)
         r_y= 1/(1000**d_y)
         r_z= 1/(1000**d_z)
@@ -135,11 +159,6 @@ class Mouse_Env(PyBulletEnv):
                 self.target_pos[0] += np.pi/6
         else:
             self.target_pos[2] -= np.pi/6
-    
-    def update_joints(self):
-        for x in arm_indexes:
-            p.setJointMotorControl(self.model, x, p.TORQUE_CONTROL, force = .002)
-            #THIS IS TEMPORARY, NEED TO FIGURE OUT WHAT WORKS
 
     def step(self, action):
         self.istep += 1
@@ -157,20 +176,23 @@ class Mouse_Env(PyBulletEnv):
         final_reward= (5*reward) - (0.5*cost)
 
         self.update_target_pos()
-        self.update_joints()
 
         done= self.is_done()
-        
 
         return final_reward, done
-        #get reward
-        #need to figure out how to edit torque here
     
+#ISSUES:
+# getLinkState/getJointState failing
+# seeding fails 
 
 #TO_DO:
 # probably need to add camera at some point
-# add initialization of neural networks when written
+# add initialization of neural networks when written (add states)
 # play with threshold
-# add maximums for circular motion
-# write do_simulation-- how to move it?
-# need action space and observation space
+# add maximums for circular motion(parameters)
+# need spaces (action space and observation space)
+# write render
+# learn parameters so rest of mouse doesn't move
+# learn position/pose to reset/intialize to
+# resource: https://gerardmaggiolino.medium.com/creating-openai-gym-environments-with-pybullet-part-2-a1441b9a4d8e
+# wrapper: https://blog.paperspace.com/getting-started-with-openai-gym/
