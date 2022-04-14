@@ -5446,7 +5446,7 @@
           <material/>
         </visual>
       </link>
-      <joint name="Head_adduction" type="revolute">
+      <joint name="Head_adduction" type="fixed">
         <parent>Cervical1</parent>
         <child>Head_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5460,7 +5460,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Head_rotation" type="revolute">
+      <joint name="Head_rotation" type="fixed">
         <parent>Head_interim_0</parent>
         <child>Head_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5474,7 +5474,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Head_flexion" type="revolute">
+      <joint name="Head_flexion" type="fixed">
         <parent>Head_interim_1</parent>
         <child>Head</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5488,7 +5488,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Cervical1_bending" type="revolute">
+      <joint name="Cervical1_bending" type="fixed">
         <parent>Cervical2</parent>
         <child>Cervical1_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5502,7 +5502,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Cervical1_rotation" type="revolute">
+      <joint name="Cervical1_rotation" type="fixed">
         <parent>Cervical1_interim_0</parent>
         <child>Cervical1_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5516,7 +5516,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Cervical1_flexion" type="revolute">
+      <joint name="Cervical1_flexion" type="fixed">
         <parent>Cervical1_interim_1</parent>
         <child>Cervical1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5530,7 +5530,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Cervical2_bending" type="revolute">
+      <joint name="Cervical2_bending" type="fixed">
         <parent>Cervical3</parent>
         <child>Cervical2_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5544,7 +5544,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Cervical2_rotation" type="revolute">
+      <joint name="Cervical2_rotation" type="fixed">
         <parent>Cervical2_interim_0</parent>
         <child>Cervical2_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5558,7 +5558,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Cervical2_flexion" type="revolute">
+      <joint name="Cervical2_flexion" type="fixed">
         <parent>Cervical2_interim_1</parent>
         <child>Cervical2</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5572,7 +5572,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Cervical3_bending" type="revolute">
+      <joint name="Cervical3_bending" type="fixed">
         <parent>Cervical4</parent>
         <child>Cervical3_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5586,7 +5586,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Cervical3_rotation" type="revolute">
+      <joint name="Cervical3_rotation" type="fixed">
         <parent>Cervical3_interim_0</parent>
         <child>Cervical3_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5600,7 +5600,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Cervical3_flexion" type="revolute">
+      <joint name="Cervical3_flexion" type="fixed">
         <parent>Cervical3_interim_1</parent>
         <child>Cervical3</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5614,7 +5614,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Cervical4_bending" type="revolute">
+      <joint name="Cervical4_bending" type="fixed">
         <parent>Cervical5</parent>
         <child>Cervical4_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5628,7 +5628,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Cervical4_rotation" type="revolute">
+      <joint name="Cervical4_rotation" type="fixed">
         <parent>Cervical4_interim_0</parent>
         <child>Cervical4_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5642,7 +5642,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Cervical4_flexion" type="revolute">
+      <joint name="Cervical4_flexion" type="fixed">
         <parent>Cervical4_interim_1</parent>
         <child>Cervical4</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5656,7 +5656,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Cervical5_bending" type="revolute">
+      <joint name="Cervical5_bending" type="fixed">
         <parent>Cervical6</parent>
         <child>Cervical5_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5670,7 +5670,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Cervical5_rotation" type="revolute">
+      <joint name="Cervical5_rotation" type="fixed">
         <parent>Cervical5_interim_0</parent>
         <child>Cervical5_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5684,7 +5684,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Cervical5_flexion" type="revolute">
+      <joint name="Cervical5_flexion" type="fixed">
         <parent>Cervical5_interim_1</parent>
         <child>Cervical5</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5698,7 +5698,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Cervical6_bending" type="revolute">
+      <joint name="Cervical6_bending" type="fixed">
         <parent>Cervical7</parent>
         <child>Cervical6_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5712,7 +5712,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Cervical6_rotation" type="revolute">
+      <joint name="Cervical6_rotation" type="fixed">
         <parent>Cervical6_interim_0</parent>
         <child>Cervical6_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5726,7 +5726,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Cervical6_flexion" type="revolute">
+      <joint name="Cervical6_flexion" type="fixed">
         <parent>Cervical6_interim_1</parent>
         <child>Cervical6</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5740,7 +5740,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Cervical7_bending" type="revolute">
+      <joint name="Cervical7_bending" type="fixed">
         <parent>Cervical8</parent>
         <child>Cervical7_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5754,7 +5754,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Cervical7_rotation" type="revolute">
+      <joint name="Cervical7_rotation" type="fixed">
         <parent>Cervical7_interim_0</parent>
         <child>Cervical7_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5768,7 +5768,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Cervical7_flexion" type="revolute">
+      <joint name="Cervical7_flexion" type="fixed">
         <parent>Cervical7_interim_1</parent>
         <child>Cervical7</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5782,7 +5782,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Cervical8_bending" type="revolute">
+      <joint name="Cervical8_bending" type="fixed">
         <parent>Thoracic1</parent>
         <child>Cervical8_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5796,7 +5796,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Cervical8_rotation" type="revolute">
+      <joint name="Cervical8_rotation" type="fixed">
         <parent>Cervical8_interim_0</parent>
         <child>Cervical8_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5810,7 +5810,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Cervical8_flexion" type="revolute">
+      <joint name="Cervical8_flexion" type="fixed">
         <parent>Cervical8_interim_1</parent>
         <child>Cervical8</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5824,7 +5824,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic1_bending" type="revolute">
+      <joint name="Thoracic1_bending" type="fixed">
         <parent>Thoracic2</parent>
         <child>Thoracic1_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5838,7 +5838,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic1_rotation" type="revolute">
+      <joint name="Thoracic1_rotation" type="fixed">
         <parent>Thoracic1_interim_0</parent>
         <child>Thoracic1_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5852,7 +5852,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic1_flexion" type="revolute">
+      <joint name="Thoracic1_flexion" type="fixed">
         <parent>Thoracic1_interim_1</parent>
         <child>Thoracic1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5866,7 +5866,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic10_bending" type="revolute">
+      <joint name="Thoracic10_bending" type="fixed">
         <parent>Thoracic11</parent>
         <child>Thoracic10_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5880,7 +5880,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic10_rotation" type="revolute">
+      <joint name="Thoracic10_rotation" type="fixed">
         <parent>Thoracic10_interim_0</parent>
         <child>Thoracic10_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5894,7 +5894,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic10_flexion" type="revolute">
+      <joint name="Thoracic10_flexion" type="fixed">
         <parent>Thoracic10_interim_1</parent>
         <child>Thoracic10</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5908,7 +5908,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic11_bending" type="revolute">
+      <joint name="Thoracic11_bending" type="fixed">
         <parent>Thoracic12</parent>
         <child>Thoracic11_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5922,7 +5922,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic11_rotation" type="revolute">
+      <joint name="Thoracic11_rotation" type="fixed">
         <parent>Thoracic11_interim_0</parent>
         <child>Thoracic11_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5936,7 +5936,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic11_flexion" type="revolute">
+      <joint name="Thoracic11_flexion" type="fixed">
         <parent>Thoracic11_interim_1</parent>
         <child>Thoracic11</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5950,7 +5950,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic12_bending" type="revolute">
+      <joint name="Thoracic12_bending" type="fixed">
         <parent>Thoracic13</parent>
         <child>Thoracic12_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5964,7 +5964,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic12_rotation" type="revolute">
+      <joint name="Thoracic12_rotation" type="fixed">
         <parent>Thoracic12_interim_0</parent>
         <child>Thoracic12_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5978,7 +5978,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic12_flexion" type="revolute">
+      <joint name="Thoracic12_flexion" type="fixed">
         <parent>Thoracic12_interim_1</parent>
         <child>Thoracic12</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -5992,7 +5992,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic13_bending" type="revolute">
+      <joint name="Thoracic13_bending" type="fixed">
         <parent>Lumbar1</parent>
         <child>Thoracic13_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6006,7 +6006,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic13_rotation" type="revolute">
+      <joint name="Thoracic13_rotation" type="fixed">
         <parent>Thoracic13_interim_0</parent>
         <child>Thoracic13_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6020,7 +6020,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic13_flexion" type="revolute">
+      <joint name="Thoracic13_flexion" type="fixed">
         <parent>Thoracic13_interim_1</parent>
         <child>Thoracic13</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6034,7 +6034,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic2_bending" type="revolute">
+      <joint name="Thoracic2_bending" type="fixed">
         <parent>Thoracic3</parent>
         <child>Thoracic2_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6048,7 +6048,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic2_rotation" type="revolute">
+      <joint name="Thoracic2_rotation" type="fixed">
         <parent>Thoracic2_interim_0</parent>
         <child>Thoracic2_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6062,7 +6062,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic2_flexion" type="revolute">
+      <joint name="Thoracic2_flexion" type="fixed">
         <parent>Thoracic2_interim_1</parent>
         <child>Thoracic2</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6076,7 +6076,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic3_bending" type="revolute">
+      <joint name="Thoracic3_bending" type="fixed">
         <parent>Thoracic4</parent>
         <child>Thoracic3_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6090,7 +6090,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic3_rotation" type="revolute">
+      <joint name="Thoracic3_rotation" type="fixed">
         <parent>Thoracic3_interim_0</parent>
         <child>Thoracic3_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6104,7 +6104,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic3_flexion" type="revolute">
+      <joint name="Thoracic3_flexion" type="fixed">
         <parent>Thoracic3_interim_1</parent>
         <child>Thoracic3</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6118,7 +6118,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic4_bending" type="revolute">
+      <joint name="Thoracic4_bending" type="fixed">
         <parent>Thoracic5</parent>
         <child>Thoracic4_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6132,7 +6132,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic4_rotation" type="revolute">
+      <joint name="Thoracic4_rotation" type="fixed">
         <parent>Thoracic4_interim_0</parent>
         <child>Thoracic4_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6146,7 +6146,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic4_flexion" type="revolute">
+      <joint name="Thoracic4_flexion" type="fixed">
         <parent>Thoracic4_interim_1</parent>
         <child>Thoracic4</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6160,7 +6160,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic5_bending" type="revolute">
+      <joint name="Thoracic5_bending" type="fixed">
         <parent>Thoracic6</parent>
         <child>Thoracic5_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6174,7 +6174,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic5_rotation" type="revolute">
+      <joint name="Thoracic5_rotation" type="fixed">
         <parent>Thoracic5_interim_0</parent>
         <child>Thoracic5_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6188,7 +6188,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic5_flexion" type="revolute">
+      <joint name="Thoracic5_flexion" type="fixed">
         <parent>Thoracic5_interim_1</parent>
         <child>Thoracic5</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6202,7 +6202,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic6_bending" type="revolute">
+      <joint name="Thoracic6_bending" type="fixed">
         <parent>Thoracic7</parent>
         <child>Thoracic6_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6216,7 +6216,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic6_rotation" type="revolute">
+      <joint name="Thoracic6_rotation" type="fixed">
         <parent>Thoracic6_interim_0</parent>
         <child>Thoracic6_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6230,7 +6230,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic6_flexion" type="revolute">
+      <joint name="Thoracic6_flexion" type="fixed">
         <parent>Thoracic6_interim_1</parent>
         <child>Thoracic6</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6244,7 +6244,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic7_bending" type="revolute">
+      <joint name="Thoracic7_bending" type="fixed">
         <parent>Thoracic8</parent>
         <child>Thoracic7_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6258,7 +6258,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic7_rotation" type="revolute">
+      <joint name="Thoracic7_rotation" type="fixed">
         <parent>Thoracic7_interim_0</parent>
         <child>Thoracic7_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6272,7 +6272,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic7_flexion" type="revolute">
+      <joint name="Thoracic7_flexion" type="fixed">
         <parent>Thoracic7_interim_1</parent>
         <child>Thoracic7</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6286,7 +6286,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic8_bending" type="revolute">
+      <joint name="Thoracic8_bending" type="fixed">
         <parent>Thoracic9</parent>
         <child>Thoracic8_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6300,7 +6300,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic8_rotation" type="revolute">
+      <joint name="Thoracic8_rotation" type="fixed">
         <parent>Thoracic8_interim_0</parent>
         <child>Thoracic8_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6314,7 +6314,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic8_flexion" type="revolute">
+      <joint name="Thoracic8_flexion" type="fixed">
         <parent>Thoracic8_interim_1</parent>
         <child>Thoracic8</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6328,7 +6328,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic9_bending" type="revolute">
+      <joint name="Thoracic9_bending" type="fixed">
         <parent>Thoracic10</parent>
         <child>Thoracic9_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6342,7 +6342,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic9_rotation" type="revolute">
+      <joint name="Thoracic9_rotation" type="fixed">
         <parent>Thoracic9_interim_0</parent>
         <child>Thoracic9_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6356,7 +6356,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Thoracic9_flexion" type="revolute">
+      <joint name="Thoracic9_flexion" type="fixed">
         <parent>Thoracic9_interim_1</parent>
         <child>Thoracic9</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6370,7 +6370,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Lumbar1_bending" type="revolute">
+      <joint name="Lumbar1_bending" type="fixed">
         <parent>Lumbar2</parent>
         <child>Lumbar1_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6384,7 +6384,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Lumbar1_rotation" type="revolute">
+      <joint name="Lumbar1_rotation" type="fixed">
         <parent>Lumbar1_interim_0</parent>
         <child>Lumbar1_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6398,7 +6398,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Lumbar1_flexion" type="revolute">
+      <joint name="Lumbar1_flexion" type="fixed">
         <parent>Lumbar1_interim_1</parent>
         <child>Lumbar1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6412,7 +6412,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Lumbar2_bending" type="revolute">
+      <joint name="Lumbar2_bending" type="fixed">
         <parent>Lumbar3</parent>
         <child>Lumbar2_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6426,7 +6426,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Lumbar2_rotation" type="revolute">
+      <joint name="Lumbar2_rotation" type="fixed">
         <parent>Lumbar2_interim_0</parent>
         <child>Lumbar2_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6440,7 +6440,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Lumbar2_flexion" type="revolute">
+      <joint name="Lumbar2_flexion" type="fixed">
         <parent>Lumbar2_interim_1</parent>
         <child>Lumbar2</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6454,7 +6454,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Lumbar3_bending" type="revolute">
+      <joint name="Lumbar3_bending" type="fixed">
         <parent>Lumbar4</parent>
         <child>Lumbar3_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6468,7 +6468,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Lumbar3_rotation" type="revolute">
+      <joint name="Lumbar3_rotation" type="fixed">
         <parent>Lumbar3_interim_0</parent>
         <child>Lumbar3_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6482,7 +6482,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Lumbar3_flexion" type="revolute">
+      <joint name="Lumbar3_flexion" type="fixed">
         <parent>Lumbar3_interim_1</parent>
         <child>Lumbar3</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6496,7 +6496,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Lumbar4_bending" type="revolute">
+      <joint name="Lumbar4_bending" type="fixed">
         <parent>Lumbar5</parent>
         <child>Lumbar4_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6510,7 +6510,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Lumbar4_rotation" type="revolute">
+      <joint name="Lumbar4_rotation" type="fixed">
         <parent>Lumbar4_interim_0</parent>
         <child>Lumbar4_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6524,7 +6524,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Lumbar4_flexion" type="revolute">
+      <joint name="Lumbar4_flexion" type="fixed">
         <parent>Lumbar4_interim_1</parent>
         <child>Lumbar4</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6538,7 +6538,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Lumbar5_bending" type="revolute">
+      <joint name="Lumbar5_bending" type="fixed">
         <parent>Lumbar6</parent>
         <child>Lumbar5_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6552,7 +6552,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Lumbar5_rotation" type="revolute">
+      <joint name="Lumbar5_rotation" type="fixed">
         <parent>Lumbar5_interim_0</parent>
         <child>Lumbar5_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6566,7 +6566,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Lumbar5_flexion" type="revolute">
+      <joint name="Lumbar5_flexion" type="fixed">
         <parent>Lumbar5_interim_1</parent>
         <child>Lumbar5</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6580,7 +6580,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Lumbar6_bending" type="revolute">
+      <joint name="Lumbar6_bending" type="fixed">
         <parent>Pelvis</parent>
         <child>Lumbar6_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6594,7 +6594,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Lumbar6_rotation" type="revolute">
+      <joint name="Lumbar6_rotation" type="fixed">
         <parent>Lumbar6_interim_0</parent>
         <child>Lumbar6_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6608,7 +6608,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Lumbar6_flexion" type="revolute">
+      <joint name="Lumbar6_flexion" type="fixed">
         <parent>Lumbar6_interim_1</parent>
         <child>Lumbar6</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6622,7 +6622,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LHip_rotation" type="revolute">
+      <joint name="LHip_rotation" type="fixed">
         <parent>Pelvis</parent>
         <child>LFemur_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6636,7 +6636,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LHip_adduction" type="revolute">
+      <joint name="LHip_adduction" type="fixed">
         <parent>LFemur_interim_0</parent>
         <child>LFemur_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6650,7 +6650,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LHip_flexion" type="revolute">
+      <joint name="LHip_flexion" type="fixed">
         <parent>LFemur_interim_1</parent>
         <child>LFemur</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6664,7 +6664,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LKnee_flexion" type="revolute">
+      <joint name="LKnee_flexion" type="fixed">
         <parent>LFemur</parent>
         <child>LTibia</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6678,7 +6678,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LAnkle_inversion" type="revolute">
+      <joint name="LAnkle_inversion" type="fixed">
         <parent>LTibia</parent>
         <child>LTarsus_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6692,7 +6692,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LAnkle_adduction" type="revolute">
+      <joint name="LAnkle_adduction" type="fixed">
         <parent>LTarsus_interim_0</parent>
         <child>LTarsus_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6706,7 +6706,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LAnkle_flexion" type="revolute">
+      <joint name="LAnkle_flexion" type="fixed">
         <parent>LTarsus_interim_1</parent>
         <child>LTarsus</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6720,7 +6720,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LMetatarsus1_flexion" type="revolute">
+      <joint name="LMetatarsus1_flexion" type="fixed">
         <parent>LTarsus</parent>
         <child>LMetatarsus1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6734,7 +6734,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LMetatarsus2_flexion" type="revolute">
+      <joint name="LMetatarsus2_flexion" type="fixed">
         <parent>LTarsus</parent>
         <child>LMetatarsus2</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6748,7 +6748,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LMetatarsus3_flexion" type="revolute">
+      <joint name="LMetatarsus3_flexion" type="fixed">
         <parent>LTarsus</parent>
         <child>LMetatarsus3</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6762,7 +6762,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LMetatarsus4_flexion" type="revolute">
+      <joint name="LMetatarsus4_flexion" type="fixed">
         <parent>LTarsus</parent>
         <child>LMetatarsus4</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6776,7 +6776,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LMetatarsus5_flexion" type="revolute">
+      <joint name="LMetatarsus5_flexion" type="fixed">
         <parent>LTarsus</parent>
         <child>LMetatarsus5</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6790,7 +6790,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LBPhalange1_flexion" type="revolute">
+      <joint name="LBPhalange1_flexion" type="fixed">
         <parent>LMetatarsus1</parent>
         <child>LBPhalange1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6804,7 +6804,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LBPhalange2_flexion" type="revolute">
+      <joint name="LBPhalange2_flexion" type="fixed">
         <parent>LMetatarsus2</parent>
         <child>LBPhalange2</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6818,7 +6818,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LBPhalange3_flexion" type="revolute">
+      <joint name="LBPhalange3_flexion" type="fixed">
         <parent>LMetatarsus3</parent>
         <child>LBPhalange3</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6832,7 +6832,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LBPhalange4_flexion" type="revolute">
+      <joint name="LBPhalange4_flexion" type="fixed">
         <parent>LMetatarsus4</parent>
         <child>LBPhalange4</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6846,7 +6846,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LBPhalange5_flexion" type="revolute">
+      <joint name="LBPhalange5_flexion" type="fixed">
         <parent>LMetatarsus5</parent>
         <child>LBPhalange5</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6860,7 +6860,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RHip_rotation" type="revolute">
+      <joint name="RHip_rotation" type="fixed">
         <parent>Pelvis</parent>
         <child>RFemur_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6874,7 +6874,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RHip_adduction" type="revolute">
+      <joint name="RHip_adduction" type="fixed">
         <parent>RFemur_interim_0</parent>
         <child>RFemur_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6888,7 +6888,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RHip_flexion" type="revolute">
+      <joint name="RHip_flexion" type="fixed">
         <parent>RFemur_interim_1</parent>
         <child>RFemur</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6902,7 +6902,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RKnee_flexion" type="revolute">
+      <joint name="RKnee_flexion" type="fixed">
         <parent>RFemur</parent>
         <child>RTibia</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6916,7 +6916,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RAnkle_inversion" type="revolute">
+      <joint name="RAnkle_inversion" type="fixed">
         <parent>RTibia</parent>
         <child>RTarsus_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6930,7 +6930,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RAnkle_adduction" type="revolute">
+      <joint name="RAnkle_adduction" type="fixed">
         <parent>RTarsus_interim_0</parent>
         <child>RTarsus_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6944,7 +6944,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RAnkle_flexion" type="revolute">
+      <joint name="RAnkle_flexion" type="fixed">
         <parent>RTarsus_interim_1</parent>
         <child>RTarsus</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6958,7 +6958,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RMetatarsus1_flexion" type="revolute">
+      <joint name="RMetatarsus1_flexion" type="fixed">
         <parent>RTarsus</parent>
         <child>RMetatarsus1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6972,7 +6972,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RMetatarsus2_flexion" type="revolute">
+      <joint name="RMetatarsus2_flexion" type="fixed">
         <parent>RTarsus</parent>
         <child>RMetatarsus2</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6986,7 +6986,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RMetatarsus3_flexion" type="revolute">
+      <joint name="RMetatarsus3_flexion" type="fixed">
         <parent>RTarsus</parent>
         <child>RMetatarsus3</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7000,7 +7000,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RMetatarsus4_flexion" type="revolute">
+      <joint name="RMetatarsus4_flexion" type="fixed">
         <parent>RTarsus</parent>
         <child>RMetatarsus4</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7014,7 +7014,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RMetatarsus5_flexion" type="revolute">
+      <joint name="RMetatarsus5_flexion" type="fixed">
         <parent>RTarsus</parent>
         <child>RMetatarsus5</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7028,7 +7028,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RBPhalange1_flexion" type="revolute">
+      <joint name="RBPhalange1_flexion" type="fixed">
         <parent>RMetatarsus1</parent>
         <child>RBPhalange1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7042,7 +7042,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RBPhalange2_flexion" type="revolute">
+      <joint name="RBPhalange2_flexion" type="fixed">
         <parent>RMetatarsus2</parent>
         <child>RBPhalange2</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7056,7 +7056,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RBPhalange3_flexion" type="revolute">
+      <joint name="RBPhalange3_flexion" type="fixed">
         <parent>RMetatarsus3</parent>
         <child>RBPhalange3</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7070,7 +7070,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RBPhalange4_flexion" type="revolute">
+      <joint name="RBPhalange4_flexion" type="fixed">
         <parent>RMetatarsus4</parent>
         <child>RBPhalange4</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7084,7 +7084,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RBPhalange5_flexion" type="revolute">
+      <joint name="RBPhalange5_flexion" type="fixed">
         <parent>RMetatarsus5</parent>
         <child>RBPhalange5</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7098,7 +7098,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LScapula_rotation" type="revolute">
+      <joint name="LScapula_rotation" type="fixed">
         <parent>Thoracic1</parent>
         <child>LScapula</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7112,7 +7112,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LShoulder_rotation" type="revolute">
+      <joint name="LShoulder_rotation" type="fixed">
         <parent>LScapula</parent>
         <child>LHumerus_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7126,7 +7126,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LShoulder_adduction" type="revolute">
+      <joint name="LShoulder_adduction" type="fixed">
         <parent>LHumerus_interim_0</parent>
         <child>LHumerus_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7140,7 +7140,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LShoulder_flexion" type="revolute">
+      <joint name="LShoulder_flexion" type="fixed">
         <parent>LHumerus_interim_1</parent>
         <child>LHumerus</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7154,7 +7154,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LElbow_flexion" type="revolute">
+      <joint name="LElbow_flexion" type="fixed">
         <parent>LHumerus</parent>
         <child>LUlna</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7168,7 +7168,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LElbow_supination" type="revolute">
+      <joint name="LElbow_supination" type="fixed">
         <parent>LUlna</parent>
         <child>LRadius</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7196,7 +7196,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LWrist_adduction" type="revolute">
+      <joint name="LWrist_adduction" type="fixed">
         <parent>LRadius_interim</parent>
         <child>LCarpus_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7210,7 +7210,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LWrist_flexion" type="revolute">
+      <joint name="LWrist_flexion" type="fixed">
         <parent>LCarpus_interim_0</parent>
         <child>LCarpus</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7224,7 +7224,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LMetaCarpus1_flexion" type="revolute">
+      <joint name="LMetaCarpus1_flexion" type="fixed">
         <parent>LCarpus</parent>
         <child>LMetaCarpus1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7238,7 +7238,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LMetaCarpus2_flexion" type="revolute">
+      <joint name="LMetaCarpus2_flexion" type="fixed">
         <parent>LCarpus</parent>
         <child>LMetaCarpus2</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7252,7 +7252,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LMetaCarpus3_flexion" type="revolute">
+      <joint name="LMetaCarpus3_flexion" type="fixed">
         <parent>LCarpus</parent>
         <child>LMetaCarpus3</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7266,7 +7266,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LMetaCarpus4_flexion" type="revolute">
+      <joint name="LMetaCarpus4_flexion" type="fixed">
         <parent>LCarpus</parent>
         <child>LMetaCarpus4</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7280,7 +7280,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LMetaCarpus5_flexion" type="revolute">
+      <joint name="LMetaCarpus5_flexion" type="fixed">
         <parent>LCarpus</parent>
         <child>LMetaCarpus5</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7294,7 +7294,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LFPhalange1_flexion" type="revolute">
+      <joint name="LFPhalange1_flexion" type="fixed">
         <parent>LMetaCarpus1</parent>
         <child>LFPhalange1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7308,7 +7308,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LFPhalange2_flexion" type="revolute">
+      <joint name="LFPhalange2_flexion" type="fixed">
         <parent>LMetaCarpus2</parent>
         <child>LFPhalange2</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7322,7 +7322,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LFPhalange3_flexion" type="revolute">
+      <joint name="LFPhalange3_flexion" type="fixed">
         <parent>LMetaCarpus3</parent>
         <child>LFPhalange3</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7336,7 +7336,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LFPhalange4_flexion" type="revolute">
+      <joint name="LFPhalange4_flexion" type="fixed">
         <parent>LMetaCarpus4</parent>
         <child>LFPhalange4</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7350,7 +7350,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LFPhalange5_flexion" type="revolute">
+      <joint name="LFPhalange5_flexion" type="fixed">
         <parent>LMetaCarpus5</parent>
         <child>LFPhalange5</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7364,7 +7364,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RScapula_rotation" type="revolute">
+      <joint name="RScapula_rotation" type="fixed">
         <parent>Thoracic1</parent>
         <child>RScapula</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7490,7 +7490,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RMetaCarpus1_flexion" type="revolute">
+      <joint name="RMetaCarpus1_flexion" type="fixed">
         <parent>RCarpus</parent>
         <child>RMetaCarpus1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7504,7 +7504,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RMetaCarpus2_flexion" type="revolute">
+      <joint name="RMetaCarpus2_flexion" type="fixed">
         <parent>RCarpus</parent>
         <child>RMetaCarpus2</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7518,7 +7518,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RMetaCarpus3_flexion" type="revolute">
+      <joint name="RMetaCarpus3_flexion" type="fixed">
         <parent>RCarpus</parent>
         <child>RMetaCarpus3</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7532,7 +7532,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RMetaCarpus4_flexion" type="revolute">
+      <joint name="RMetaCarpus4_flexion" type="fixed">
         <parent>RCarpus</parent>
         <child>RMetaCarpus4</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7546,7 +7546,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RMetaCarpus5_flexion" type="revolute">
+      <joint name="RMetaCarpus5_flexion" type="fixed">
         <parent>RCarpus</parent>
         <child>RMetaCarpus5</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7560,7 +7560,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RFPhalange1_flexion" type="revolute">
+      <joint name="RFPhalange1_flexion" type="fixed">
         <parent>RMetaCarpus1</parent>
         <child>RFPhalange1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7574,7 +7574,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RFPhalange2_flexion" type="revolute">
+      <joint name="RFPhalange2_flexion" type="fixed">
         <parent>RMetaCarpus2</parent>
         <child>RFPhalange2</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7588,7 +7588,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RFPhalange3_flexion" type="revolute">
+      <joint name="RFPhalange3_flexion" type="fixed">
         <parent>RMetaCarpus3</parent>
         <child>RFPhalange3</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7602,7 +7602,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RFPhalange4_flexion" type="revolute">
+      <joint name="RFPhalange4_flexion" type="fixed">
         <parent>RMetaCarpus4</parent>
         <child>RFPhalange4</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7616,7 +7616,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RFPhalange5_flexion" type="revolute">
+      <joint name="RFPhalange5_flexion" type="fixed">
         <parent>RMetaCarpus5</parent>
         <child>RFPhalange5</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7630,7 +7630,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail1_bending" type="revolute">
+      <joint name="Tail1_bending" type="fixed">
         <parent>Pelvis</parent>
         <child>Tail1_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7644,7 +7644,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail1_rotation" type="revolute">
+      <joint name="Tail1_rotation" type="fixed">
         <parent>Tail1_interim_0</parent>
         <child>Tail1_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7658,7 +7658,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail1_flexion" type="revolute">
+      <joint name="Tail1_flexion" type="fixed">
         <parent>Tail1_interim_1</parent>
         <child>Tail1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7672,7 +7672,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail10_bending" type="revolute">
+      <joint name="Tail10_bending" type="fixed">
         <parent>Tail9</parent>
         <child>Tail10_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7686,7 +7686,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail10_rotation" type="revolute">
+      <joint name="Tail10_rotation" type="fixed">
         <parent>Tail10_interim_0</parent>
         <child>Tail10_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7700,7 +7700,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail10_flexion" type="revolute">
+      <joint name="Tail10_flexion" type="fixed">
         <parent>Tail10_interim_1</parent>
         <child>Tail10</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7714,7 +7714,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail11_bending" type="revolute">
+      <joint name="Tail11_bending" type="fixed">
         <parent>Tail10</parent>
         <child>Tail11_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7728,7 +7728,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail11_rotation" type="revolute">
+      <joint name="Tail11_rotation" type="fixed">
         <parent>Tail11_interim_0</parent>
         <child>Tail11_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7742,7 +7742,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail11_flexion" type="revolute">
+      <joint name="Tail11_flexion" type="fixed">
         <parent>Tail11_interim_1</parent>
         <child>Tail11</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7756,7 +7756,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail12_bending" type="revolute">
+      <joint name="Tail12_bending" type="fixed">
         <parent>Tail11</parent>
         <child>Tail12_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7770,7 +7770,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail12_rotation" type="revolute">
+      <joint name="Tail12_rotation" type="fixed">
         <parent>Tail12_interim_0</parent>
         <child>Tail12_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7784,7 +7784,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail12_flexion" type="revolute">
+      <joint name="Tail12_flexion" type="fixed">
         <parent>Tail12_interim_1</parent>
         <child>Tail12</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7798,7 +7798,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail13_bending" type="revolute">
+      <joint name="Tail13_bending" type="fixed">
         <parent>Tail12</parent>
         <child>Tail13_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7812,7 +7812,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail13_rotation" type="revolute">
+      <joint name="Tail13_rotation" type="fixed">
         <parent>Tail13_interim_0</parent>
         <child>Tail13_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7826,7 +7826,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail13_flexion" type="revolute">
+      <joint name="Tail13_flexion" type="fixed">
         <parent>Tail13_interim_1</parent>
         <child>Tail13</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7840,7 +7840,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail14_bending" type="revolute">
+      <joint name="Tail14_bending" type="fixed">
         <parent>Tail13</parent>
         <child>Tail14_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7854,7 +7854,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail14_rotation" type="revolute">
+      <joint name="Tail14_rotation" type="fixed">
         <parent>Tail14_interim_0</parent>
         <child>Tail14_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7868,7 +7868,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail14_flexion" type="revolute">
+      <joint name="Tail14_flexion" type="fixed">
         <parent>Tail14_interim_1</parent>
         <child>Tail14</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7882,7 +7882,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail15_bending" type="revolute">
+      <joint name="Tail15_bending" type="fixed">
         <parent>Tail14</parent>
         <child>Tail15_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7896,7 +7896,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail15_rotation" type="revolute">
+      <joint name="Tail15_rotation" type="fixed">
         <parent>Tail15_interim_0</parent>
         <child>Tail15_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7910,7 +7910,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail15_flexion" type="revolute">
+      <joint name="Tail15_flexion" type="fixed">
         <parent>Tail15_interim_1</parent>
         <child>Tail15</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7924,7 +7924,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail16_bending" type="revolute">
+      <joint name="Tail16_bending" type="fixed">
         <parent>Tail15</parent>
         <child>Tail16_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7938,7 +7938,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail16_rotation" type="revolute">
+      <joint name="Tail16_rotation" type="fixed">
         <parent>Tail16_interim_0</parent>
         <child>Tail16_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7952,7 +7952,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail16_flexion" type="revolute">
+      <joint name="Tail16_flexion" type="fixed">
         <parent>Tail16_interim_1</parent>
         <child>Tail16</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7966,7 +7966,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail17_bending" type="revolute">
+      <joint name="Tail17_bending" type="fixed">
         <parent>Tail16</parent>
         <child>Tail17_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7980,7 +7980,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail17_rotation" type="revolute">
+      <joint name="Tail17_rotation" type="fixed">
         <parent>Tail17_interim_0</parent>
         <child>Tail17_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -7994,7 +7994,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail17_flexion" type="revolute">
+      <joint name="Tail17_flexion" type="fixed">
         <parent>Tail17_interim_1</parent>
         <child>Tail17</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8008,7 +8008,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail18_bending" type="revolute">
+      <joint name="Tail18_bending" type="fixed">
         <parent>Tail17</parent>
         <child>Tail18_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8022,7 +8022,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail18_rotation" type="revolute">
+      <joint name="Tail18_rotation" type="fixed">
         <parent>Tail18_interim_0</parent>
         <child>Tail18_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8036,7 +8036,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail18_flexion" type="revolute">
+      <joint name="Tail18_flexion" type="fixed">
         <parent>Tail18_interim_1</parent>
         <child>Tail18</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8050,7 +8050,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail19_bending" type="revolute">
+      <joint name="Tail19_bending" type="fixed">
         <parent>Tail18</parent>
         <child>Tail19_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8064,7 +8064,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail19_rotation" type="revolute">
+      <joint name="Tail19_rotation" type="fixed">
         <parent>Tail19_interim_0</parent>
         <child>Tail19_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8078,7 +8078,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail19_flexion" type="revolute">
+      <joint name="Tail19_flexion" type="fixed">
         <parent>Tail19_interim_1</parent>
         <child>Tail19</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8092,7 +8092,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail2_bending" type="revolute">
+      <joint name="Tail2_bending" type="fixed">
         <parent>Tail1</parent>
         <child>Tail2_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8106,7 +8106,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail2_rotation" type="revolute">
+      <joint name="Tail2_rotation" type="fixed">
         <parent>Tail2_interim_0</parent>
         <child>Tail2_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8120,7 +8120,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail2_flexion" type="revolute">
+      <joint name="Tail2_flexion" type="fixed">
         <parent>Tail2_interim_1</parent>
         <child>Tail2</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8134,7 +8134,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail20_bending" type="revolute">
+      <joint name="Tail20_bending" type="fixed">
         <parent>Tail19</parent>
         <child>Tail20_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8148,7 +8148,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail20_rotation" type="revolute">
+      <joint name="Tail20_rotation" type="fixed">
         <parent>Tail20_interim_0</parent>
         <child>Tail20_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8162,7 +8162,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail20_flexion" type="revolute">
+      <joint name="Tail20_flexion" type="fixed">
         <parent>Tail20_interim_1</parent>
         <child>Tail20</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8176,7 +8176,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail21_bending" type="revolute">
+      <joint name="Tail21_bending" type="fixed">
         <parent>Tail20</parent>
         <child>Tail21_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8190,7 +8190,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail21_rotation" type="revolute">
+      <joint name="Tail21_rotation" type="fixed">
         <parent>Tail21_interim_0</parent>
         <child>Tail21_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8204,7 +8204,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail21_flexion" type="revolute">
+      <joint name="Tail21_flexion" type="fixed">
         <parent>Tail21_interim_1</parent>
         <child>Tail21</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8218,7 +8218,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail22_bending" type="revolute">
+      <joint name="Tail22_bending" type="fixed">
         <parent>Tail21</parent>
         <child>Tail22_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8232,7 +8232,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail22_rotation" type="revolute">
+      <joint name="Tail22_rotation" type="fixed">
         <parent>Tail22_interim_0</parent>
         <child>Tail22_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8246,7 +8246,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail22_flexion" type="revolute">
+      <joint name="Tail22_flexion" type="fixed">
         <parent>Tail22_interim_1</parent>
         <child>Tail22</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8260,7 +8260,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail23_bending" type="revolute">
+      <joint name="Tail23_bending" type="fixed">
         <parent>Tail22</parent>
         <child>Tail23_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8274,7 +8274,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail23_rotation" type="revolute">
+      <joint name="Tail23_rotation" type="fixed">
         <parent>Tail23_interim_0</parent>
         <child>Tail23_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8288,7 +8288,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail23_flexion" type="revolute">
+      <joint name="Tail23_flexion" type="fixed">
         <parent>Tail23_interim_1</parent>
         <child>Tail23</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8302,7 +8302,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail3_bending" type="revolute">
+      <joint name="Tail3_bending" type="fixed">
         <parent>Tail2</parent>
         <child>Tail3_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8316,7 +8316,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail3_rotation" type="revolute">
+      <joint name="Tail3_rotation" type="fixed">
         <parent>Tail3_interim_0</parent>
         <child>Tail3_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8330,7 +8330,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail3_flexion" type="revolute">
+      <joint name="Tail3_flexion" type="fixed">
         <parent>Tail3_interim_1</parent>
         <child>Tail3</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8344,7 +8344,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail4_bending" type="revolute">
+      <joint name="Tail4_bending" type="fixed">
         <parent>Tail3</parent>
         <child>Tail4_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8358,7 +8358,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail4_rotation" type="revolute">
+      <joint name="Tail4_rotation" type="fixed">
         <parent>Tail4_interim_0</parent>
         <child>Tail4_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8372,7 +8372,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail4_flexion" type="revolute">
+      <joint name="Tail4_flexion" type="fixed">
         <parent>Tail4_interim_1</parent>
         <child>Tail4</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8386,7 +8386,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail5_bending" type="revolute">
+      <joint name="Tail5_bending" type="fixed">
         <parent>Tail4</parent>
         <child>Tail5_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8400,7 +8400,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail5_rotation" type="revolute">
+      <joint name="Tail5_rotation" type="fixed">
         <parent>Tail5_interim_0</parent>
         <child>Tail5_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8414,7 +8414,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail5_flexion" type="revolute">
+      <joint name="Tail5_flexion" type="fixed">
         <parent>Tail5_interim_1</parent>
         <child>Tail5</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8428,7 +8428,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail6_bending" type="revolute">
+      <joint name="Tail6_bending" type="fixed">
         <parent>Tail5</parent>
         <child>Tail6_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8442,7 +8442,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail6_rotation" type="revolute">
+      <joint name="Tail6_rotation" type="fixed">
         <parent>Tail6_interim_0</parent>
         <child>Tail6_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8456,7 +8456,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail6_flexion" type="revolute">
+      <joint name="Tail6_flexion" type="fixed">
         <parent>Tail6_interim_1</parent>
         <child>Tail6</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8470,7 +8470,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail7_bending" type="revolute">
+      <joint name="Tail7_bending" type="fixed">
         <parent>Tail6</parent>
         <child>Tail7_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8484,7 +8484,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail7_rotation" type="revolute">
+      <joint name="Tail7_rotation" type="fixed">
         <parent>Tail7_interim_0</parent>
         <child>Tail7_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8498,7 +8498,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail7_flexion" type="revolute">
+      <joint name="Tail7_flexion" type="fixed">
         <parent>Tail7_interim_1</parent>
         <child>Tail7</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8512,7 +8512,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail8_bending" type="revolute">
+      <joint name="Tail8_bending" type="fixed">
         <parent>Tail7</parent>
         <child>Tail8_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8526,7 +8526,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail8_rotation" type="revolute">
+      <joint name="Tail8_rotation" type="fixed">
         <parent>Tail8_interim_0</parent>
         <child>Tail8_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8540,7 +8540,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail8_flexion" type="revolute">
+      <joint name="Tail8_flexion" type="fixed">
         <parent>Tail8_interim_1</parent>
         <child>Tail8</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8554,7 +8554,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail9_bending" type="revolute">
+      <joint name="Tail9_bending" type="fixed">
         <parent>Tail8</parent>
         <child>Tail9_interim_0</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8568,7 +8568,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail9_rotation" type="revolute">
+      <joint name="Tail9_rotation" type="fixed">
         <parent>Tail9_interim_0</parent>
         <child>Tail9_interim_1</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -8582,7 +8582,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="Tail9_flexion" type="revolute">
+      <joint name="Tail9_flexion" type="fixed">
         <parent>Tail9_interim_1</parent>
         <child>Tail9</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>

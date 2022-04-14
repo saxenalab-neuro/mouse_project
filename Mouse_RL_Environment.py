@@ -97,8 +97,8 @@ class PyBulletEnv(gym.Env):
 
 class Mouse_Env(PyBulletEnv):
 
-    def __init__(self, model_path, frame_skip):
-        PyBulletEnv.__init__(self, model_path, frame_skip)
+    def __init__(self, model_path, frame_skip, ctrl):
+        PyBulletEnv.__init__(self, model_path, frame_skip, ctrl)
 
     def reset_model(self, pose_file): 
         joint_list = []
