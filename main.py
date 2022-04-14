@@ -25,7 +25,7 @@ for i in range (1000):
     #posObj = p.getJointState(mouseEnv.model, 106, mouseEnv.client) #not working
     #print(posObj)
     #forces = rand(7)
-    forces = np.random.uniform(-.005, .005, size = 7) #is this valid?
+    forces = np.random.uniform(-.005, .005, size = 7) 
     #print("forces", forces)
     #print('reward', mouseEnv.reward())#doesn't work bc getLinkState doesn't work
     

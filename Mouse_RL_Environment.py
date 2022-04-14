@@ -27,7 +27,7 @@ ctrl = [104, 105, 106, 107, 108, 110, 111]
 #RMetacarpus1_flextion - 112, use link (carpus) for pos
 
 class PyBulletEnv(gym.Env):
-    def __init__(self, model_path, frame_skip):
+    def __init__(self, model_path, frame_skip, ctrl):
         #####BUILDS SERVER AND LOADS MODEL#####
         self.client = p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
@@ -36,6 +36,8 @@ class PyBulletEnv(gym.Env):
         self.model = p.loadSDF(model_path, globalScaling = 25)[0]# resizes
         self.frame_skip= frame_skip
         p.resetBasePositionAndOrientation(self.model, model_offset, p.getQuaternionFromEuler([0, 0, 80.2]))
+
+        self.ctrl = ctrl
         
         #####TARGET POSITION USING POINT IN SPACE: theta, rho, phi#####
         ###theta,rho,phi for initializing
@@ -51,6 +53,7 @@ class PyBulletEnv(gym.Env):
         # self._max_episode_steps= self.timestep_limit/ 2
         self._max_episode_steps= 1000   #Do not matter. It is being set in the main.py where the total number of steps are being changed.
         self.threshold = .03 #CAN BE EDITED
+
 
         #initialize neural networks here
 
@@ -76,15 +79,15 @@ class PyBulletEnv(gym.Env):
         self.threshold= self.threshold_user
         self.reset_model()
 
-    def do_simulation(self, ctrl, n_frames, forcesArray):
-        self.ctrl = ctrl
+    def do_simulation(self, n_frames, forcesArray):
         for _ in range(n_frames):
             p.setJointMotorControlArray(self.model, self.ctrl, p.TORQUE_CONTROL, forces = forcesArray)
             p.stepSimulation()
 
-    def get_cost(self, action):
+    #Might need to be adjusted
+    def get_cost(self, forces):
         scaler= 1/50
-        act = np.array(action)
+        act = forces
         cost = scaler * np.sum(np.abs(act))
         return cost
 
@@ -104,19 +107,17 @@ class Mouse_Env(PyBulletEnv):
         with open(pose_file) as stream:
             data = yaml.load(stream, Loader=yaml.SafeLoader)
             data = {k.lower(): v for k, v in data.items()}
-            #print(data)
         for joint in joint_list:
-            joint_name =p.getJointInfo(self, joint)[1] 
             _pose = np.deg2rad(data.get(p.getJointInfo(self, joint)[1].decode('UTF-8').lower(), 0))#decode removes b' prefix
             p.resetJointState(self, joint, targetValue=_pose)
 
     def reward(self): 
         hand_pos = p.getLinkState(self.model, 112)[0] #(x, y, z)
-        x, y, z= sph2cart(self.target_pos[0], self.target_pos[1], self.target_pos[2])
+        theta, rho, phi= sph2cart(self.target_pos[0], self.target_pos[1], self.target_pos[2])
 
-        d_x = np.abs(hand_pos[0] - x)
-        d_y = np.abs(hand_pos[1] - y)
-        d_z = np.abs(hand_pos[2] - z)
+        d_x = np.abs(hand_pos[0] - theta)
+        d_y = np.abs(hand_pos[1] - rho)
+        d_z = np.abs(hand_pos[2] - phi)
 
         if d_x > self.threshold or d_y > self.threshold or d_z > self.threshold:
             return -5
@@ -145,6 +146,7 @@ class Mouse_Env(PyBulletEnv):
 
     def update_target_pos(self):
         #depends on how fast we want it to move, play around with values
+        #CURRENTLY HAS ARBITRARY VALUES
         if(self.target_pos[0] < self.max_theta):
             self.target_pos[0] += np.pi/6
         else:
@@ -160,19 +162,19 @@ class Mouse_Env(PyBulletEnv):
         else:
             self.target_pos[2] -= np.pi/6
 
-    def step(self, action):
+    def step(self, forces):
         self.istep += 1
 
         #can edit threshold with episodes
         if self.istep > self.n_fixedsteps:
             self.threshold = 0.032
 
-        self.do_simulation(action, self.frame_skip)
+        self.do_simulation(self.frame_skip, forces)
 
         reward= self.reward()
 
         #can play around with cost/reward value
-        cost= self.get_cost(action)
+        cost= self.get_cost(forces)
         final_reward= (5*reward) - (0.5*cost)
 
         self.update_target_pos()
@@ -190,8 +192,7 @@ class Mouse_Env(PyBulletEnv):
 # add initialization of neural networks when written (add states)
 # play with threshold
 # add maximums for circular motion(parameters)
-# need spaces (action space and observation space)
-# write render
+# write render, set state, dt
 # learn parameters so rest of mouse doesn't move
 # learn position/pose to reset/intialize to
 # resource: https://gerardmaggiolino.medium.com/creating-openai-gym-environments-with-pybullet-part-2-a1441b9a4d8e
