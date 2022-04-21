@@ -193,7 +193,7 @@ class Mouse_Env(PyBulletEnv):
 # play with threshold
 # add maximums for circular motion(parameters)
 # write render, set state, dt
-# learn parameters so rest of mouse doesn't move
+# learn parameters so rest of mouse doesn't move or gravity for fixed mouse
 # learn position/pose to reset/intialize to
 # resource: https://gerardmaggiolino.medium.com/creating-openai-gym-environments-with-pybullet-part-2-a1441b9a4d8e
 # wrapper: https://blog.paperspace.com/getting-started-with-openai-gym/
