@@ -61,6 +61,17 @@ def initialize_position(modelId, pose_file, joint_list):
         _pose = np.deg2rad(data.get(p.getJointInfo(modelId, joint)[1].decode('UTF-8').lower(), 0))#decode removes b' prefix
         p.resetJointState(modelId, joint, targetValue=_pose)
 
+def reset_model_position(self, pose_file): 
+        joint_list = []
+        for joint in range(p.getNumJoints(self.model)):
+            joint_list.append(joint)
+        with open(pose_file) as stream:
+            data = yaml.load(stream, Loader=yaml.SafeLoader)
+            data = {k.lower(): v for k, v in data.items()}
+        for joint in joint_list:
+            _pose = np.deg2rad(data.get(p.getJointInfo(self, joint)[1].decode('UTF-8').lower(), 0))#decode removes b' prefix
+            p.resetJointState(self, joint, targetValue=_pose)
+
 def cart2sph(x, y, z):
     hxy = np.hypot(x, y)
     r = np.hypot(hxy, z) #rho
