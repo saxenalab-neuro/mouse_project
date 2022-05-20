@@ -11,6 +11,13 @@ import yaml
 from model_utils import cart2sph
 from model_utils import sph2cart
 
+import farms_pylog as pylog
+try:
+    from farms_muscle.musculo_skeletal_system import MusculoSkeletalSystem
+except ImportError:
+    pylog.warning("farms-muscle not installed!")
+from farms_container import Container
+
 #file_path = "/files/mouse_with_joint_limits.sdf"
 #pose_file = "files/locomotion_pose.yaml"
 
@@ -27,31 +34,46 @@ ctrl = [104, 105, 106, 107, 108, 110, 111]
 #RMetacarpus1_flextion - 112, use link (carpus) for pos
 
 class PyBulletEnv(gym.Env):
-    def __init__(self, model_path, frame_skip, ctrl):
+    def __init__(self, model_path, muscle_config_file, frame_skip, ctrl):
         #####BUILDS SERVER AND LOADS MODEL#####
         self.client = p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0,0,0) #no gravity
-        self.plane = p.loadURDF("plane.urdf")
-        self.model = p.loadSDF(model_path, globalScaling = 25)[0]# resizes
+        self.plane = p.loadURDF("plane.urdf") #sets floor
+        self.model = p.loadSDF(model_path, globalScaling = 25)[0]#resizes, loads model, returns model id
+        p.resetBasePositionAndOrientation(self.model, model_offset, p.getQuaternionFromEuler([0, 0, 80.2])) #resets model position
+
+        #####MUSCLES#####
+        #self.MUSCLE_CONFIG_FILE = muscle_config_file
+        #self.container = Container(max_iterations=int(2.5/0.001))
+        #self.muscles = MusculoSkeletalSystem(self.container, 1e-3, self.MUSCLE_CONFIG_FILE)
+        #self.muscles.setup_integrator()
+
+        #u = self.container.muscles.activations
+        #for muscle in self.muscles.muscles.keys():
+        #        self.muscle_params[muscle] = u.get_parameter(
+        #            'stim_{}'.format(muscle)
+        #        )
+        #        self.muscle_excitation[muscle] = p.addUserDebugParameter(
+        #            "flexor {}".format(muscle), 0, 1, 0.00
+        #        )
+        #        self.muscle_params[muscle].value = 0
+
+
+
+
+        self.ctrl = ctrl #control, list of all joints in right arm (shoulder, elbow, wrist + metacarpus for measuring hand pos)
+        
+        #####TARGET POSITION USING POINT IN SPACE: X, Y, Z#####
+        ###x, y, z for initializing from hand starting position, target_pos for updating
+        self.x_pos = 1.3697159804379864 
+        self.y_pos = -0.09075569325649711 
+        self.z_pos = 0.2675971224717795 
+        self.target_pos = [self.x_pos, self.y_pos, self.z_pos]
+        
+
         self.frame_skip= frame_skip
-        p.resetBasePositionAndOrientation(self.model, model_offset, p.getQuaternionFromEuler([0, 0, 80.2]))
 
-        self.ctrl = ctrl
-        
-        #####TARGET POSITION USING POINT IN SPACE: theta, rho, phi#####
-        ###theta,rho,phi for initializing, target_pos for updating
-        #FROM OUT STARTING POSITION
-        self.theta = 1.3697159804379864 
-        self.rho = -0.09075569325649711 
-        self.phi = 0.2675971224717795 
-        self.target_pos = [self.theta, self.rho, self.phi]
-
-        ###MAX PARAMETERS FOR SIMULATION###
-        #Arbitrary values for testing
-        self.max_theta = 7
-        self.max_rho = 7
-        
         #####META PARAMETERS FOR SIMULATION#####
         self.n_fixedsteps= 20
         self.timestep_limit= (1319 * 1) + self.n_fixedsteps
@@ -59,14 +81,11 @@ class PyBulletEnv(gym.Env):
         self._max_episode_steps= 1000 #Does not matter. It is being set in the main.py where the total number of steps are being changed.
         self.threshold_user= 0.064
 
-
-        #initialize neural networks here
-
         #self.seed()
 
-    #def seed(self, seed=None):
-     #   self.np_random, seed = seeding.np_random(seed)
-      #  return [seed]
+    #def seed(self, seed = None):
+    #    self.np_random, seed = seeding.np_random(seed)
+    #    return [seed]
 
     def get_ids(self):
         return self.client, self.model
@@ -77,10 +96,11 @@ class PyBulletEnv(gym.Env):
 
     def reset(self):
         self.istep= 0
-        self.theta= np.pi#FIND STARTING POS
-        self.rho = 0 #FIND STARTING POS
-        self.phi = 0 #FIND STARTING POS
-        self.target_pos = [self.theta, self.rho, self.phi]
+        #carpus starting position, from getLinkState of metacarpus1
+        self.x_pos = 1.3697159804379864 
+        self.y_pos = -0.09075569325649711 
+        self.z_pos = 0.2675971224717795 
+        self.target_pos = [self.x_pos, self.y_pos, self.z_pos]
         self.threshold= self.threshold_user 
         self.reset_model()
 
@@ -89,32 +109,29 @@ class PyBulletEnv(gym.Env):
             p.setJointMotorControlArray(self.model, self.ctrl, p.TORQUE_CONTROL, forces = forcesArray)
             p.stepSimulation()
 
-    #Might need to be adjusted
-    def get_cost(self, forces):
-        scaler= 1/50
-        cost = scaler * np.sum(np.abs(forces))
-        return cost
-
     #####DISCONNECTS SERVER#####
     def close(self):
         p.disconnect(self.client)
 
 class Mouse_Env(PyBulletEnv):
 
-    def __init__(self, model_path, frame_skip, ctrl):
-        PyBulletEnv.__init__(self, model_path, frame_skip, ctrl)
+    def __init__(self, model_path, muscle_config_file, frame_skip, ctrl):
+        PyBulletEnv.__init__(self, model_path, muscle_config_file, frame_skip, ctrl)
 
     def reset_model(self): 
         return 0
-        #RESETS NN    
 
-    def reward(self): 
+    def get_cost(self, forces):
+        scaler= 1/50
+        cost = scaler * np.sum(np.abs(forces))
+        return cost
+
+    def get_reward(self): 
         hand_pos = p.getLinkState(self.model, 112)[0] #(x, y, z)
-        theta, rho, phi= sph2cart(self.target_pos[0], self.target_pos[1], self.target_pos[2])
 
-        d_x = np.abs(hand_pos[0] - theta)
-        d_y = np.abs(hand_pos[1] - rho)
-        d_z = np.abs(hand_pos[2] - phi)
+        d_x = np.abs(hand_pos[0] - self.target_pos[0])
+        d_y = np.abs(hand_pos[1] - self.target_pos[1])
+        d_z = np.abs(hand_pos[2] - self.target_pos[2])
 
         if d_x > self.threshold or d_y > self.threshold or d_z > self.threshold:
             return -5
@@ -125,15 +142,15 @@ class Mouse_Env(PyBulletEnv):
 
         reward= r_x + r_y + r_z
 
-        print("reward ", reward)
+        #print("reward ", reward)
 
         return reward
 
     def is_done(self):
-        x, y, z= sph2cart(self.target_pos[0], self.target_pos[1], self.target_pos[2])
-        target = np.array([x, y, z])
+        #x, y, z = self.target_pos[0], self.target_pos[1], self.target_pos[2]
+        #target = np.array([x, y, z])
         hand_pos =  np.array(p.getLinkState(self.model, 112)[0]) #(x, y, z)
-        criteria = hand_pos - target
+        criteria = hand_pos - self.target_pos
 
         if self.istep < self.timestep_limit:
             if np.abs(criteria[0]) > self.threshold or np.abs(criteria[1]) > self.threshold or np.abs(criteria[2]) > self.threshold:
@@ -144,23 +161,17 @@ class Mouse_Env(PyBulletEnv):
             return True
 
     def update_target_pos(self):
-        #depends on how fast we want it to move, play around with values, don't update z
-        #CURRENTLY HAS ARBITRARY VALUES
+        #don't update z
+        #should move in a vertical sinusoidal wave
         
-        if(self.target_pos[0] < self.max_theta):
-            self.target_pos[0] += np.pi/6
-        else:
-            self.target_pos[0] -= np.pi/6
+        theta, rho, phi = cart2sph(self.target_pos[0], self.target_pos[1], self.target_pos[2])
+        rho += np.pi/6
+        theta = np.sin(rho)
+        x, y, z = sph2cart(theta, rho, phi)
+        self.target_pos[0], self.target_pos[1], self.target_pos[2] = x, y, z
 
-        if(self.target_pos[1] < self.max_rho):
-                self.target_pos[1] += np.pi/6
-        else:
-            self.target_pos[1] -= np.pi/6
+        print("x, y", self.target_pos[0], self.target_pos[1])
 
-        #if(self.target_pos[2] < self.max_phi):
-        #        self.target_pos[0] += np.pi/6
-        #else:
-        #    self.target_pos[2] -= np.pi/6
 
     def step(self, forces):
         self.istep += 1
@@ -170,27 +181,27 @@ class Mouse_Env(PyBulletEnv):
             self.threshold = 0.032
 
         self.do_simulation(self.frame_skip, forces)
+        #self.muscles.step()
 
-        reward= self.reward()
-
-        #can play around with cost/reward value
+        reward= self.get_reward()
         cost= self.get_cost(forces)
         final_reward= (5*reward) - (0.5*cost)
 
+        done= self.is_done()
+        
         self.update_target_pos()
 
-        done= self.is_done()
+        
 
         return final_reward, done
     
-#ISSUES:
+#issues:
 # seeding fails 
 
-#TO_DO:
-# add initialization of neural networks when written
+#to_do:
 # play with threshold
 # add maximums for circular motion(parameters)
-# write render, set state, dt
+# write set state, reset_model
 # learn parameters so rest of mouse doesn't move or gravity for fixed mouse
 # learn position/pose to reset/intialize to
 # resource: https://gerardmaggiolino.medium.com/creating-openai-gym-environments-with-pybullet-part-2-a1441b9a4d8e

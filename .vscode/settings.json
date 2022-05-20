@@ -1,0 +1,7 @@
+{
+    "python.analysis.extraPaths": [
+        "./farms_muscle",
+        "./bullet3/examples/pybullet/gym",
+        "./bullet3/examples/pybullet/gym"
+    ]
+}
