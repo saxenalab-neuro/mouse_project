@@ -4,19 +4,21 @@
             "name": "Mac",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk/System/Library/Frameworks/Python.framework/Versions/2.7/include/python2.7",
-                "/Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers"
+                "/Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers",
+                "/Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/core/include",
+                "/usr/local/Cellar/python@3.10/3.10.2/Frameworks/Python.framework/Versions/3.10/include/python3.10/"
             ],
             "defines": [],
             "macFrameworkPath": [],
-            "compilerPath": "/usr/bin/clang",
+            "compilerPath": "/usr/local/bin/g++-11",
             "cStandard": "c17",
             "cppStandard": "c++17",
-            "intelliSenseMode": "macos-clang-x64",
-            "configurationProvider": "ms-vscode.cmake-tools",
+            "intelliSenseMode": "macos-gcc-x64",
             "browse": {
                 "limitSymbolsToIncludedHeaders": true
-            }
+            },
+            "forcedInclude": [],
+            "configurationProvider": "ms-vscode.cmake-tools"
         }
     ],
     "version": 4

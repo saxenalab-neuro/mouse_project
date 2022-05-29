@@ -9,8 +9,6 @@ import model_utils
 import pybullet as p
 import pybullet_data
 import yaml
-from model_utils import cart2sph
-from model_utils import sph2cart
 
 import farms_pylog as pylog
 try:
@@ -21,6 +19,7 @@ from farms_container import Container
 
 #file_path = "/files/mouse_with_joint_limits.sdf"
 #pose_file = "files/locomotion_pose.yaml"
+sphere_file = "/Users/andreachacon/Documents/GitHub/mouse_project/files/sphere_small.urdf"
 
 model_offset = (0.0, 0.0, 1.2) #z position modified with global scaling
 
@@ -39,28 +38,22 @@ class PyBulletEnv(gym.Env):
         #####BUILDS SERVER AND LOADS MODEL#####
         self.client = p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
-        p.setGravity(0,0,0) #no gravity
+        p.setGravity(0,0,-9.8) #no gravity
         self.plane = p.loadURDF("plane.urdf") #sets floor
         self.model = p.loadSDF(model_path, globalScaling = 25)[0]#resizes, loads model, returns model id
         p.resetBasePositionAndOrientation(self.model, model_offset, p.getQuaternionFromEuler([0, 0, 80.2])) #resets model position
+        self.sphere = p.loadURDF("sphere_small.urdf", globalScaling = 5)
+        
 
         self.ctrl = ctrl #control, list of all joints in right arm (shoulder, elbow, wrist + metacarpus for measuring hand pos)
         
         #####MUSCLES#####
-        #self.MUSCLE_CONFIG_FILE = muscle_config_file
         #self.container = Container(max_iterations=int(2.5/0.001))
-        #self.muscles = MusculoSkeletalSystem(self.container, 1e-3, self.MUSCLE_CONFIG_FILE)
+        #self.container.initialize()
+        #self.muscles = MusculoSkeletalSystem(self.container, 1e-3, muscle_config_file)
+        #self.muscles.print_system() 
+        #print("num states", self.muscles.muscle_sys.num_states)
         #self.muscles.setup_integrator()
-
-        #u = self.container.muscles.activations
-        #for muscle in self.muscles.muscles.keys():
-        #        self.muscle_params[muscle] = u.get_parameter(
-        #            'stim_{}'.format(muscle)
-        #        )
-        #        self.muscle_excitation[muscle] = p.addUserDebugParameter(
-        #            "flexor {}".format(muscle), 0, 1, 0.00
-        #        )
-        #        self.muscle_params[muscle].value = 0
 
         #####META PARAMETERS FOR SIMULATION#####
         self.n_fixedsteps= 20
@@ -72,13 +65,16 @@ class PyBulletEnv(gym.Env):
 
         #####TARGET POSITION USING POINT IN SPACE: X, Y, Z#####
         ###x, y, z for initializing from hand starting position, target_pos for updating
-        self.x_pos = 1.3697159804379864 
-        self.y_pos = -0.09075569325649711 
-        self.z_pos = 0.2675971224717795 
+        self.x_pos = p.getLinkState(self.model, 112)[0][0]
+        self.y_pos = p.getLinkState(self.model, 112)[0][1]
+        self.z_pos = p.getLinkState(self.model, 112)[0][2]
         self.target_pos = [self.x_pos, self.y_pos, self.z_pos]
+        self.center = [self.x_pos, self.y_pos, self.z_pos]
         self.radius = 1 #changed through experimentation, arbitrarily defined
         self.theta = np.linspace(0, 2 * np.pi, self.timestep) #array from 0-2pi of timestep values
         self.frame_skip= frame_skip
+
+        p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
 
         #self.seed()
 
@@ -96,10 +92,7 @@ class PyBulletEnv(gym.Env):
     def reset(self, pose_file):
         self.istep= 0
         #carpus starting position, from getLinkState of metacarpus1
-        self.x_pos = 1.3697159804379864 
-        self.y_pos = -0.09075569325649711 
-        self.z_pos = 0.2675971224717795 
-        self.target_pos = [self.x_pos, self.y_pos, self.z_pos]
+        self.target_pos = p.getLinkState(self.model, 112)[0]
         self.threshold= self.threshold_user 
         self.reset_model(pose_file)
 
@@ -116,6 +109,11 @@ class Mouse_Env(PyBulletEnv):
 
     def __init__(self, model_path, muscle_config_file, frame_skip, ctrl, timestep):
         PyBulletEnv.__init__(self, model_path, muscle_config_file, frame_skip, ctrl, timestep)
+        #u = self.container.muscles.activations
+        #for muscle in self.muscles.muscles.keys():
+        #       self.muscle_params[muscle] = u.get_parameter('stim_{}'.format(muscle))
+        #       self.muscle_excitation[muscle] = p.addUserDebugParameter("flexor {}".format(muscle), 0, 1, 0.00)
+        #       self.muscle_params[muscle].value = 0
 
     def reset_model(self, pose_file): 
         model_utils.reset_model_position(self.model, pose_file)
@@ -144,8 +142,6 @@ class Mouse_Env(PyBulletEnv):
         return reward
 
     def is_done(self):
-        #x, y, z = self.target_pos[0], self.target_pos[1], self.target_pos[2]
-        #target = np.array([x, y, z])
         hand_pos =  np.array(p.getLinkState(self.model, 112)[0]) #(x, y, z)
         criteria = hand_pos - self.target_pos
 
@@ -159,10 +155,11 @@ class Mouse_Env(PyBulletEnv):
 
     def update_target_pos(self):
 
-        self.target_pos[0] = self.radius * np.cos(self.theta[self.istep - 1])
-        self.target_pos[1] = self.radius * np.sin(self.theta[self.istep - 1])
-
-        print("x, y, z", self.target_pos[0], self.target_pos[1], self.target_pos[2])
+        self.x_pos = self.radius * np.cos(self.theta[self.istep - 1]) + self.center[0]
+        self.z_pos = self.radius * np.sin(self.theta[self.istep - 1])
+        self.target_pos = [self.x_pos, self.y_pos, self.z_pos]
+        p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
+        #print("x, y, z", self.target_pos)
 
 
     def step(self, forces):
@@ -186,14 +183,7 @@ class Mouse_Env(PyBulletEnv):
         
 
         return final_reward, done
-    
-#issues:
-# seeding fails 
-
 #to_do:
-# play with threshold
-# write set state, reset_model
-# learn parameters so rest of mouse doesn't move or gravity for fixed mouse
-# learn position/pose to reset/intialize to
+# things to hold model down
 # resource: https://gerardmaggiolino.medium.com/creating-openai-gym-environments-with-pybullet-part-2-a1441b9a4d8e
 # wrapper: https://blog.paperspace.com/getting-started-with-openai-gym/
