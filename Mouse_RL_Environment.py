@@ -17,8 +17,6 @@ except ImportError:
     pylog.warning("farms-muscle not installed!")
 from farms_container import Container
 
-#file_path = "/files/mouse_with_joint_limits.sdf"
-#pose_file = "files/locomotion_pose.yaml"
 sphere_file = "/Users/andreachacon/Documents/GitHub/mouse_project/files/sphere_small.urdf"
 
 model_offset = (0.0, 0.0, 1.2) #z position modified with global scaling
@@ -38,11 +36,14 @@ class PyBulletEnv(gym.Env):
         #####BUILDS SERVER AND LOADS MODEL#####
         self.client = p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
-        p.setGravity(0,0,-9.8) #no gravity
+        p.setGravity(0,0,-9.8) #normal gravity
         self.plane = p.loadURDF("plane.urdf") #sets floor
         self.model = p.loadSDF(model_path, globalScaling = 25)[0]#resizes, loads model, returns model id
         p.resetBasePositionAndOrientation(self.model, model_offset, p.getQuaternionFromEuler([0, 0, 80.2])) #resets model position
-        self.sphere = p.loadURDF("sphere_small.urdf", globalScaling = 5)
+        self.sphere = p.loadURDF("sphere_small.urdf", globalScaling = 2)
+        group = 0#other objects don't collide with me
+        mask=0 # don't collide with any other object
+        p. setCollisionFilterGroupMask(self.sphere, 0, group, mask)
         
 
         self.ctrl = ctrl #control, list of all joints in right arm (shoulder, elbow, wrist + metacarpus for measuring hand pos)
@@ -62,6 +63,7 @@ class PyBulletEnv(gym.Env):
         self._max_episode_steps= 1000 #Does not matter. It is being set in the main.py where the total number of steps are being changed.
         self.threshold_user= 0.064
         self.timestep = timestep
+        self.frame_skip= frame_skip
 
         #####TARGET POSITION USING POINT IN SPACE: X, Y, Z#####
         ###x, y, z for initializing from hand starting position, target_pos for updating
@@ -70,10 +72,9 @@ class PyBulletEnv(gym.Env):
         self.z_pos = p.getLinkState(self.model, 112)[0][2]
         self.target_pos = [self.x_pos, self.y_pos, self.z_pos]
         self.center = [self.x_pos, self.y_pos, self.z_pos]
-        self.radius = 1 #changed through experimentation, arbitrarily defined
+        self.radius = .5 #arbitrarily defined
         self.theta = np.linspace(0, 2 * np.pi, self.timestep) #array from 0-2pi of timestep values
-        self.frame_skip= frame_skip
-
+        
         p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
 
         #self.seed()
@@ -156,7 +157,7 @@ class Mouse_Env(PyBulletEnv):
     def update_target_pos(self):
 
         self.x_pos = self.radius * np.cos(self.theta[self.istep - 1]) + self.center[0]
-        self.z_pos = self.radius * np.sin(self.theta[self.istep - 1])
+        self.z_pos = self.radius * np.sin(self.theta[self.istep - 1]) + self.center[2]
         self.target_pos = [self.x_pos, self.y_pos, self.z_pos]
         p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
         #print("x, y, z", self.target_pos)
@@ -181,9 +182,6 @@ class Mouse_Env(PyBulletEnv):
         self.update_target_pos()
 
         
-
         return final_reward, done
 #to_do:
 # things to hold model down
-# resource: https://gerardmaggiolino.medium.com/creating-openai-gym-environments-with-pybullet-part-2-a1441b9a4d8e
-# wrapper: https://blog.paperspace.com/getting-started-with-openai-gym/

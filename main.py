@@ -21,7 +21,7 @@ mouseEnv = Mouse_Env(file_path, muscle_config_file, frame_skip, ctrl, timestep)
 model_utils.disable_control(mouseEnv.model)
 
 #FINDING HAND STARTING POS
-clientid, modelid = mouseEnv.get_ids()
+#clientid, modelid = mouseEnv.get_ids()
 #print("hand starting pos", p.getLinkState(modelid, 112)[0])
 #HAND STARTING POS: (1.3697159804379864, -0.09075569325649711, 0.2675971224717795)
 
