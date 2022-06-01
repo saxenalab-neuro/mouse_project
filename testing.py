@@ -1,0 +1,41 @@
+import pybullet as p
+import time
+import numpy as np
+import time
+import pybullet_data
+
+import model_utils
+
+file_path = "/Users/andreachacon/Documents/GitHub/mouse_project/files/mouse_test.sdf" 
+pose_file = "/Users/andreachacon/Documents/GitHub/mouse_project/files/default_pose.yaml"
+
+model_offset = (0.0, 0.0, 1.2) #z position modified with global scaling
+
+client = p.connect(p.GUI)
+p.setAdditionalSearchPath(pybullet_data.getDataPath())
+p.setGravity(0,0,-9.8) #normal gravity
+plane = p.loadURDF("plane.urdf") #sets floor
+
+model = p.loadSDF(file_path, globalScaling = 25)[0]#resizes, loads model, returns model id
+p.resetBasePositionAndOrientation(model, model_offset, p.getQuaternionFromEuler([0, 0, 80.2]))
+
+#model_utils.reset_model_position(model, pose_file)
+#print(model_utils.generate_name_to_joint_id_dict(model))
+
+#unstable
+#block = p.loadURDF("block.urdf", globalScaling = 7)
+#p.resetBasePositionAndOrientation(block, (.7, 0, .56), p.getQuaternionFromEuler([0, 7.88, 4.5]))
+
+#too short
+#table = p.loadURDF("table/table.urdf")
+#p.resetBasePositionAndOrientation(table, (.7, 0, 0), p.getQuaternionFromEuler([0, 0, 4.75]))
+
+for i in range (100000):
+    #forces = np.random.uniform(-.005, .005, size = 7)
+    #final_reward, done = mouseEnv.step(forces)
+    #print("reward", final_reward, "| is not done?", done)
+    #print("hand pos", p.getLinkState(modelid, 112)[0])
+    p.stepSimulation()
+
+    
+p.disconnect()

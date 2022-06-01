@@ -70,6 +70,7 @@ def reset_model_position(model, pose_file):
             data = {k.lower(): v for k, v in data.items()}
         for joint in joint_list:
             _pose = np.deg2rad(data.get(p.getJointInfo(model, joint)[1].decode('UTF-8').lower(), 0))#decode removes b' prefix
+            print(_pose)
             p.resetJointState(model, joint, targetValue=_pose)
 
 def cart2sph(x, y, z):

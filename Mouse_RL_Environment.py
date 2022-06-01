@@ -71,8 +71,8 @@ class PyBulletEnv(gym.Env):
         self.y_pos = p.getLinkState(self.model, 112)[0][1]
         self.z_pos = p.getLinkState(self.model, 112)[0][2]
         self.target_pos = [self.x_pos, self.y_pos, self.z_pos]
-        self.center = [self.x_pos, self.y_pos, self.z_pos]
-        self.radius = .5 #arbitrarily defined
+        self.center = [self.x_pos + .25 , self.y_pos, self.z_pos + .1]
+        self.radius = .20 #arbitrarily defined
         self.theta = np.linspace(0, 2 * np.pi, self.timestep) #array from 0-2pi of timestep values
         
         p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
