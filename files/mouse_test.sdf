@@ -7196,10 +7196,10 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LWrist_adduction" type="fixed">
+      <joint name="LWrist_adduction" type="revolute">
         <parent>LRadius_interim</parent>
         <child>LCarpus_interim_0</child>
-        <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
+        <pose>0.0 0.0 0.0 0.0 0.0 10.0</pose>
         <axis>
           <xyz>0.0 1.0 0.0</xyz>
           <limit>
@@ -7210,7 +7210,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LWrist_flexion" type="fixed">
+      <joint name="LWrist_flexion" type="revolute">
         <parent>LCarpus_interim_0</parent>
         <child>LCarpus</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>

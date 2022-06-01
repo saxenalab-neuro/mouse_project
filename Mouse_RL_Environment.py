@@ -30,6 +30,7 @@ ctrl = [104, 105, 106, 107, 108, 110, 111]
 #RWrist_adduction - 110
 #RWrist_flexion - 111
 #RMetacarpus1_flextion - 112, use link (carpus) for pos
+#Lumbar2_bending - 12, use link(lumbar 1) for stability reward
 
 class PyBulletEnv(gym.Env):
     def __init__(self, model_path, muscle_config_file, frame_skip, ctrl, timestep):
@@ -40,10 +41,7 @@ class PyBulletEnv(gym.Env):
         self.plane = p.loadURDF("plane.urdf") #sets floor
         self.model = p.loadSDF(model_path, globalScaling = 25)[0]#resizes, loads model, returns model id
         p.resetBasePositionAndOrientation(self.model, model_offset, p.getQuaternionFromEuler([0, 0, 80.2])) #resets model position
-        self.sphere = p.loadURDF("sphere_small.urdf", globalScaling = 2)
-        group = 0#other objects don't collide with me
-        mask=0 # don't collide with any other object
-        p. setCollisionFilterGroupMask(self.sphere, 0, group, mask)
+        #self.sphere = p.loadURDF("sphere_small.urdf", globalScaling = 2) #visualizes target position
         
 
         self.ctrl = ctrl #control, list of all joints in right arm (shoulder, elbow, wrist + metacarpus for measuring hand pos)
@@ -72,10 +70,10 @@ class PyBulletEnv(gym.Env):
         self.z_pos = p.getLinkState(self.model, 112)[0][2]
         self.target_pos = [self.x_pos, self.y_pos, self.z_pos]
         self.center = [self.x_pos + .25 , self.y_pos, self.z_pos + .1]
-        self.radius = .20 #arbitrarily defined
+        self.radius = .20
         self.theta = np.linspace(0, 2 * np.pi, self.timestep) #array from 0-2pi of timestep values
-        
-        p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
+        self.stability_pos = p.getLinkState(self.model, 12)[0]
+        #p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
 
         #self.seed()
 
@@ -131,16 +129,34 @@ class Mouse_Env(PyBulletEnv):
         d_y = np.abs(hand_pos[1] - self.target_pos[1])
         d_z = np.abs(hand_pos[2] - self.target_pos[2])
 
+        distances = [d_x, d_y, d_z]
+
         if d_x > self.threshold or d_y > self.threshold or d_z > self.threshold:
-            return -5
+            reward = -5
+        
+        else:
+            r_x= 1/(1000**d_x)
+            r_y= 1/(1000**d_y)
+            r_z= 1/(1000**d_z)
 
-        r_x= 1/(1000**d_x)
-        r_y= 1/(1000**d_y)
-        r_z= 1/(1000**d_z)
+            reward= r_x + r_y + r_z
 
-        reward= r_x + r_y + r_z
+        #punishment for moving 
+        lumbar_curr_pos = p.getLinkState(self.model, 112)[0]
+        d_x_lum = np.abs(lumbar_curr_pos[0] - self.stability_pos[0])
+        d_y_lum = np.abs(lumbar_curr_pos[1] - self.stability_pos[1])
+        d_z_lum = np.abs(lumbar_curr_pos[2] - self.stability_pos[2])
 
-        return reward
+        punishment = (-5 * d_x_lum) - (5 * d_y_lum) - (5 * d_z_lum)
+
+        if np.abs(punishment)> 5:
+            reward += -5
+        
+        else:
+            reward += punishment
+
+
+        return reward, distances
 
     def is_done(self):
         hand_pos =  np.array(p.getLinkState(self.model, 112)[0]) #(x, y, z)
@@ -159,7 +175,7 @@ class Mouse_Env(PyBulletEnv):
         self.x_pos = self.radius * np.cos(self.theta[self.istep - 1]) + self.center[0]
         self.z_pos = self.radius * np.sin(self.theta[self.istep - 1]) + self.center[2]
         self.target_pos = [self.x_pos, self.y_pos, self.z_pos]
-        p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
+        #p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
         #print("x, y, z", self.target_pos)
 
 
@@ -170,18 +186,32 @@ class Mouse_Env(PyBulletEnv):
         if self.istep > self.n_fixedsteps:
             self.threshold = 0.032
 
+        
+
         self.do_simulation(self.frame_skip, forces)
         #self.muscles.step()
 
-        reward= self.get_reward()
-        cost= self.get_cost(forces)
+        reward, distances = self.get_reward()
+        cost = self.get_cost(forces)
         final_reward= (5*reward) - (0.5*cost)
 
         done= self.is_done()
         
+
+        prev_target = np.array(self.target_pos)
         self.update_target_pos()
+        curr_target = np.array(self.target_pos)
+
+        target_vel = (curr_target - prev_target) / (self.frame_skip ) #need clarification about dt
+
+
+        state = list(p.getJointStates(self.model, ctrl)[0]) #joint positions
+        state.append(list(p.getJointStates(self.model, ctrl)[1])) #joint velocities
+        state.append(list(self.target_pos)) #target position
+        state.append(list(target_vel)) #target velocity
+        state.append(distances)# hand_pos - target_pos
 
         
-        return final_reward, done
+        return state, final_reward, done
 #to_do:
 # things to hold model down

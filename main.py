@@ -31,9 +31,10 @@ mouseEnv.reset(pose_file)
 
 for i in range (mouseEnv.timestep):
     forces = np.random.uniform(-.005, .005, size = 7)
-    final_reward, done = mouseEnv.step(forces)
+    state, final_reward, done = mouseEnv.step(forces)
     #print("reward", final_reward, "| is not done?", done)
     #print("hand pos", p.getLinkState(modelid, 112)[0])
+    print(state)
     
 mouseEnv.close() #disconnects server
 
