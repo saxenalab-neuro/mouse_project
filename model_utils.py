@@ -1,5 +1,5 @@
-import pybullet as p
 import yaml
+import pybullet as p
 import numpy as np
 
 arm_indexes = [104, 105, 106, 107, 108, 110, 111, 112]

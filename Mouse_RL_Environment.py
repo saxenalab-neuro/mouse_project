@@ -4,7 +4,6 @@ from gym import error, spaces
 from gym.utils import seeding
 import numpy as np
 import itertools
-import torch
 import model_utils
 import pybullet as p
 import pybullet_data
@@ -16,8 +15,10 @@ try:
 except ImportError:
     pylog.warning("farms-muscle not installed!")
 from farms_container import Container
+from farms_container import DataTable
 
-sphere_file = "/Users/andreachacon/Documents/GitHub/mouse_project/files/sphere_small.urdf"
+sphere_file = "/home/john_lazzari/mouse_project/files/sphere_small.urdf"
+pose_file = "/home/john_lazzari/mouse_project/files/default_pose.yaml"
 
 model_offset = (0.0, 0.0, 1.2) #z position modified with global scaling
 
@@ -35,6 +36,7 @@ ctrl = [104, 105, 106, 107, 108, 110, 111]
 class PyBulletEnv(gym.Env):
     def __init__(self, model_path, muscle_config_file, frame_skip, ctrl, timestep):
         #####BUILDS SERVER AND LOADS MODEL#####
+        #self.client = p.connect(p.GUI)
         self.client = p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0,0,-9.8) #normal gravity
@@ -42,17 +44,66 @@ class PyBulletEnv(gym.Env):
         self.model = p.loadSDF(model_path, globalScaling = 25)[0]#resizes, loads model, returns model id
         p.resetBasePositionAndOrientation(self.model, model_offset, p.getQuaternionFromEuler([0, 0, 80.2])) #resets model position
         #self.sphere = p.loadURDF("sphere_small.urdf", globalScaling = 2) #visualizes target position
-        
 
         self.ctrl = ctrl #control, list of all joints in right arm (shoulder, elbow, wrist + metacarpus for measuring hand pos)
         
+        # Edited this section
         #####MUSCLES#####
-        #self.container = Container(max_iterations=int(2.5/0.001))
-        #self.container.initialize()
-        #self.muscles = MusculoSkeletalSystem(self.container, 1e-3, muscle_config_file)
+        self.container = Container(max_iterations=int(2.5/0.001))
+
+        # Physics simulation to namespace
+        self.sim_data = self.container.add_namespace('physics')
+        # Add tables to container
+        self.sim_data.add_table('joint_positions')
+        self.sim_data.add_table('joint_velocity')
+        self.sim_data.add_table('target_positions')
+        self.sim_data.add_table('target_velocity')
+        self.sim_data.add_table('distances')
+
+        self.muscles = MusculoSkeletalSystem(self.container, 1e-3, config_path=muscle_config_file)
+
+        # Hardcoded rn
+        self.sim_data.joint_positions.add_parameter('x')
+        self.sim_data.joint_positions.add_parameter('y')
+        self.sim_data.joint_positions.add_parameter('z')
+
+        self.sim_data.joint_velocity.add_parameter('x')
+        self.sim_data.joint_velocity.add_parameter('y')
+        self.sim_data.joint_velocity.add_parameter('z')
+
+        self.sim_data.target_positions.add_parameter('x')
+        self.sim_data.target_positions.add_parameter('y')
+        self.sim_data.target_positions.add_parameter('z')
+
+        self.sim_data.target_velocity.add_parameter('x')
+        self.sim_data.target_velocity.add_parameter('y')
+        self.sim_data.target_velocity.add_parameter('z')
+
+        self.sim_data.joint_positions.add_parameter('RShoulder_rotation')
+        self.sim_data.joint_positions.add_parameter('RShoulder_adduction')
+        self.sim_data.joint_positions.add_parameter('RShoulder_flexion')
+        self.sim_data.joint_positions.add_parameter('RElbow_flexion')
+        self.sim_data.joint_positions.add_parameter('RElbow_supination')
+        self.sim_data.joint_positions.add_parameter('RWrist_adduction')
+        self.sim_data.joint_positions.add_parameter('RWrist_flexion')
+
+        self.sim_data.joint_velocity.add_parameter('RShoulder_rotation')
+        self.sim_data.joint_velocity.add_parameter('RShoulder_adduction')
+        self.sim_data.joint_velocity.add_parameter('RShoulder_flexion')
+        self.sim_data.joint_velocity.add_parameter('RElbow_flexion')
+        self.sim_data.joint_velocity.add_parameter('RElbow_supination')
+        self.sim_data.joint_velocity.add_parameter('RWrist_adduction')
+        self.sim_data.joint_velocity.add_parameter('rwrist_flexion')
+
+        self.sim_data.target_positions.add_parameter('carpus')
+        self.sim_data.target_velocity.add_parameter('carpus')
+
+        model_utils.reset_model_position(self.model, pose_file)
+        
+        self.container.initialize()
         #self.muscles.print_system() 
-        #print("num states", self.muscles.muscle_sys.num_states)
-        #self.muscles.setup_integrator()
+        print("num states", self.muscles.muscle_sys.num_states)
+        self.muscles.setup_integrator()
 
         #####META PARAMETERS FOR SIMULATION#####
         self.n_fixedsteps= 20
@@ -108,11 +159,13 @@ class Mouse_Env(PyBulletEnv):
 
     def __init__(self, model_path, muscle_config_file, frame_skip, ctrl, timestep):
         PyBulletEnv.__init__(self, model_path, muscle_config_file, frame_skip, ctrl, timestep)
-        #u = self.container.muscles.activations
-        #for muscle in self.muscles.muscles.keys():
-        #       self.muscle_params[muscle] = u.get_parameter('stim_{}'.format(muscle))
-        #       self.muscle_excitation[muscle] = p.addUserDebugParameter("flexor {}".format(muscle), 0, 1, 0.00)
-        #       self.muscle_params[muscle].value = 0
+        u = self.container.muscles.activations
+        self.muscle_params = {}
+        self.muscle_excitation = {}
+        for muscle in self.muscles.muscles.keys():
+               self.muscle_params[muscle] = u.get_parameter('stim_{}'.format(muscle))
+               self.muscle_excitation[muscle] = p.addUserDebugParameter("flexor {}".format(muscle), 0, 1, 0.00)
+               self.muscle_params[muscle].value = 0
 
     def reset_model(self, pose_file): 
         model_utils.reset_model_position(self.model, pose_file)
@@ -151,10 +204,8 @@ class Mouse_Env(PyBulletEnv):
 
         if np.abs(punishment)> 5:
             reward += -5
-        
         else:
             reward += punishment
-
 
         return reward, distances
 
@@ -178,18 +229,16 @@ class Mouse_Env(PyBulletEnv):
         #p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
         #print("x, y, z", self.target_pos)
 
-
     def step(self, forces):
+
         self.istep += 1
 
         #can edit threshold with episodes
         if self.istep > self.n_fixedsteps:
             self.threshold = 0.032
 
-        
-
         self.do_simulation(self.frame_skip, forces)
-        #self.muscles.step()
+        self.muscles.step()
 
         reward, distances = self.get_reward()
         cost = self.get_cost(forces)
@@ -197,7 +246,6 @@ class Mouse_Env(PyBulletEnv):
 
         done= self.is_done()
         
-
         prev_target = np.array(self.target_pos)
         self.update_target_pos()
         curr_target = np.array(self.target_pos)
@@ -211,7 +259,6 @@ class Mouse_Env(PyBulletEnv):
         state.append(list(target_vel)) #target velocity
         state.append(distances)# hand_pos - target_pos
 
-        
         return state, final_reward, done
 #to_do:
 # things to hold model down
