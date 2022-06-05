@@ -194,19 +194,6 @@ class Mouse_Env(PyBulletEnv):
 
             reward= r_x + r_y + r_z
 
-        #punishment for moving 
-        lumbar_curr_pos = p.getLinkState(self.model, 112)[0]
-        d_x_lum = np.abs(lumbar_curr_pos[0] - self.stability_pos[0])
-        d_y_lum = np.abs(lumbar_curr_pos[1] - self.stability_pos[1])
-        d_z_lum = np.abs(lumbar_curr_pos[2] - self.stability_pos[2])
-
-        punishment = (-5 * d_x_lum) - (5 * d_y_lum) - (5 * d_z_lum)
-
-        if np.abs(punishment)> 5:
-            reward += -5
-        else:
-            reward += punishment
-
         return reward, distances
 
     def is_done(self):
