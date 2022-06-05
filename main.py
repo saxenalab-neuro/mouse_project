@@ -14,10 +14,12 @@ muscle_config_file = "/Users/andreachacon/Documents/GitHub/mouse_project/files/r
 model_offset = (0.0, 0.0, 1.2) #z position modified with global scaling
 
 #ARM CONTROL
-#ctrl = [104, 105, 106, 107, 108, 110, 111]
+ctrl = [104, 105, 106, 107, 108, 110, 111]
 
 #STABILITY CONTROL
-ctrl = [142, 125, 91, 92, 104, 105, 106, 107, 108, 110, 111]
+#ctrl = [142, 125, 91, 92, 104, 105, 106, 107, 108, 110, 111]
+
+###JOINT TO INDEX###
 #RKnee - 142
 #LKnee - 125
 #LWrist_adduction - 91
@@ -38,10 +40,10 @@ n_frames = 1
 timestep = 1000
 
 #ARM ENV
-#mouseEnv = Mouse_Env(file_path, muscle_config_file, frame_skip, ctrl, timestep)
+mouseEnv = Mouse_Env(file_path, muscle_config_file, frame_skip, ctrl, timestep)
 
 #STABILITY ENV
-mouseEnv = Mouse_Env(file_path, muscle_config_file, frame_skip, ctrl, timestep)
+#mouseEnv = Mouse_Stability_Env(file_path, muscle_config_file, frame_skip, ctrl, timestep)
 
 model_utils.disable_control(mouseEnv.model)
 
@@ -50,11 +52,11 @@ mouseEnv.reset(pose_file)
 
 for i in range (mouseEnv.timestep):
     #ARM TRAINING
-    #forces = np.random.uniform(-.005, .005, size = 7) 
+    forces = np.random.uniform(-.005, .005, size = 7) 
 
     #STABILITY TRAINING
-    forces = np.random.uniform(-.005, .005, size = 4) #random activations to knees, LWrist
-    forces.append(0, 0, 0, 0, 0, 0, 0) #no activations to right arm
+    #forces = np.random.uniform(-.005, .005, size = 4) #random activations to knees, LWrist
+    #forces.append([0, 0, 0, 0, 0, 0, 0]) #no activations to right arm
 
 
     state, final_reward, done = mouseEnv.step(forces)
