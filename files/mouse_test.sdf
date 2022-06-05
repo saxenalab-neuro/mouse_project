@@ -6664,7 +6664,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="LKnee_flexion" type="fixed">
+      <joint name="LKnee_flexion" type="revolute">
         <parent>LFemur</parent>
         <child>LTibia</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
@@ -6902,7 +6902,7 @@
           </limit>
         </axis>
       </joint>
-      <joint name="RKnee_flexion" type="fixed">
+      <joint name="RKnee_flexion" type="revolute">
         <parent>RFemur</parent>
         <child>RTibia</child>
         <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>

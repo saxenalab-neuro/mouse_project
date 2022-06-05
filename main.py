@@ -1,40 +1,56 @@
 import pybullet as p
-import time
 import numpy as np
 import time
 
 import model_utils
 from Mouse_RL_Environment import Mouse_Env
 
-file_path = "/Users/andreachacon/Documents/GitHub/mouse_project/files/mouse_test.sdf" ###Changed joints to fixed: model starts floating due to 0-gravity
-#file_path = "/files/mouse_with_joint_limits.sdf" ###Unfixed joints, no issues with 0-gravity
+file_path = "/Users/andreachacon/Documents/GitHub/mouse_project/files/mouse_test.sdf" ###All joints fixed except right arm, left wrist, & knees
+#file_path = "/Users/andreachacon/Documents/GitHub/mouse_project/files/mouse_test.sdf" ###All joints fixed except right arm
 pose_file = "/Users/andreachacon/Documents/GitHub/mouse_project/files/default_pose.yaml"
 muscle_config_file = "/Users/andreachacon/Documents/GitHub/mouse_project/files/right_forelimb.yaml"
 
 model_offset = (0.0, 0.0, 1.2) #z position modified with global scaling
 
-ctrl = [104, 105, 106, 107, 108, 110, 111] #7
+#ARM CONTROL
+#ctrl = [104, 105, 106, 107, 108, 110, 111]a
+
+#STABILITY CONTROL
+ctrl = [142, 125, 91, 92, 104, 105, 106, 107, 108, 110, 111]
+#RKnee - 142
+#LKnee - 125
+#LWrist_adduction - 91
+#LWrist_flexion - 92
+#RShoulder_rotation - 104
+#RShoulder_adduction - 105
+#RShoulder_flexion - 106
+#RElbow_flexion - 107
+#RElbow_supination - 108
+#RWrist_adduction - 110
+#RWrist_flexion - 111
+#Lumbar2_bending - 12, use link(lumbar 1) for stability reward
 frame_skip = 1
 n_frames = 1
 timestep = 1000
 mouseEnv = Mouse_Env(file_path, muscle_config_file, frame_skip, ctrl, timestep)
 model_utils.disable_control(mouseEnv.model)
 
-#FINDING HAND STARTING POS
-#clientid, modelid = mouseEnv.get_ids()
-#print("hand starting pos", p.getLinkState(modelid, 112)[0])
-#HAND STARTING POS: (1.3697159804379864, -0.09075569325649711, 0.2675971224717795)
-
-
 p.setTimeStep(.001)
 mouseEnv.reset(pose_file)
 
 for i in range (mouseEnv.timestep):
-    forces = np.random.uniform(-.005, .005, size = 7)
+    #ARM TRAINING
+    #forces = np.random.uniform(-.005, .005, size = 7) 
+
+    #STABILITY TRAINING
+    forces = np.random.uniform(-.005, .005, size = 4) #random activations to knees, LWrist
+    forces.append(0, 0, 0, 0, 0, 0, 0) #no activations to right arm
+
+
     state, final_reward, done = mouseEnv.step(forces)
-    #print("reward", final_reward, "| is not done?", done)
+    #print("reward", final_reward, "| is not done?", done)  11
     #print("hand pos", p.getLinkState(modelid, 112)[0])
-    print(state)
+    #print(state)
     
 mouseEnv.close() #disconnects server
 
