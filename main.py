@@ -4,6 +4,7 @@ import time
 
 import model_utils
 from Mouse_RL_Environment import Mouse_Env
+from Mouse_Stabilize_Environment import Mouse_Stability_Env
 
 file_path = "/Users/andreachacon/Documents/GitHub/mouse_project/files/mouse_test.sdf" ###All joints fixed except right arm, left wrist, & knees
 #file_path = "/Users/andreachacon/Documents/GitHub/mouse_project/files/mouse_test.sdf" ###All joints fixed except right arm
@@ -13,7 +14,7 @@ muscle_config_file = "/Users/andreachacon/Documents/GitHub/mouse_project/files/r
 model_offset = (0.0, 0.0, 1.2) #z position modified with global scaling
 
 #ARM CONTROL
-#ctrl = [104, 105, 106, 107, 108, 110, 111]a
+#ctrl = [104, 105, 106, 107, 108, 110, 111]
 
 #STABILITY CONTROL
 ctrl = [142, 125, 91, 92, 104, 105, 106, 107, 108, 110, 111]
@@ -29,10 +30,19 @@ ctrl = [142, 125, 91, 92, 104, 105, 106, 107, 108, 110, 111]
 #RWrist_adduction - 110
 #RWrist_flexion - 111
 #Lumbar2_bending - 12, use link(lumbar 1) for stability reward
+
+
+###PARAMETERS###
 frame_skip = 1
 n_frames = 1
 timestep = 1000
+
+#ARM ENV
+#mouseEnv = Mouse_Env(file_path, muscle_config_file, frame_skip, ctrl, timestep)
+
+#STABILITY ENV
 mouseEnv = Mouse_Env(file_path, muscle_config_file, frame_skip, ctrl, timestep)
+
 model_utils.disable_control(mouseEnv.model)
 
 p.setTimeStep(.001)

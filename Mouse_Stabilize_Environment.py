@@ -73,7 +73,7 @@ class PyBulletEnv(gym.Env):
     def close(self):
         p.disconnect(self.client)
 
-class Mouse_Env(PyBulletEnv):
+class Mouse_Stability_Env(PyBulletEnv):
 
     def __init__(self, model_path, muscle_config_file, frame_skip, ctrl, timestep):
         PyBulletEnv.__init__(self, model_path, muscle_config_file, frame_skip, ctrl, timestep)

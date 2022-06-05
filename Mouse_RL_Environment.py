@@ -47,12 +47,12 @@ class PyBulletEnv(gym.Env):
         self.ctrl = ctrl #control, list of all joints in right arm (shoulder, elbow, wrist + metacarpus for measuring hand pos)
         
         #####MUSCLES#####
-        #self.container = Container(max_iterations=int(2.5/0.001))
-        #self.container.initialize()
-        #self.muscles = MusculoSkeletalSystem(self.container, 1e-3, muscle_config_file)
+        self.container = Container(max_iterations=int(2.5/0.001))
+        self.container.initialize()
+        self.muscles = MusculoSkeletalSystem(self.container, 1e-3, muscle_config_file)
         #self.muscles.print_system() 
         #print("num states", self.muscles.muscle_sys.num_states)
-        #self.muscles.setup_integrator()
+        self.muscles.setup_integrator()
 
         #####META PARAMETERS FOR SIMULATION#####
         self.n_fixedsteps= 20
@@ -108,11 +108,11 @@ class Mouse_Env(PyBulletEnv):
 
     def __init__(self, model_path, muscle_config_file, frame_skip, ctrl, timestep):
         PyBulletEnv.__init__(self, model_path, muscle_config_file, frame_skip, ctrl, timestep)
-        #u = self.container.muscles.activations
-        #for muscle in self.muscles.muscles.keys():
-        #       self.muscle_params[muscle] = u.get_parameter('stim_{}'.format(muscle))
-        #       self.muscle_excitation[muscle] = p.addUserDebugParameter("flexor {}".format(muscle), 0, 1, 0.00)
-        #       self.muscle_params[muscle].value = 0
+        u = self.container.muscles.activations
+        for muscle in self.muscles.muscles.keys():
+               self.muscle_params[muscle] = u.get_parameter('stim_{}'.format(muscle))
+               self.muscle_excitation[muscle] = p.addUserDebugParameter("flexor {}".format(muscle), 0, 1, 0.00)
+               self.muscle_params[muscle].value = 0
 
     def reset_model(self, pose_file): 
         model_utils.reset_model_position(self.model, pose_file)
@@ -189,7 +189,7 @@ class Mouse_Env(PyBulletEnv):
         
 
         self.do_simulation(self.frame_skip, forces)
-        #self.muscles.step()
+        self.muscles.step()
 
         reward, distances = self.get_reward()
         cost = self.get_cost(forces)
