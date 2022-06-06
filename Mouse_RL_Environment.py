@@ -18,10 +18,8 @@ from farms_container import Container
 
 sphere_file = "../files/sphere_small.urdf"
 
-model_offset = (0.0, 0.0, 1.2) #z position modified with global scaling
-
 class PyBulletEnv(gym.Env):
-    def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep):
+    def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset):
         #####BUILDS SERVER AND LOADS MODEL#####
         #self.client = p.connect(p.GUI)
         self.client = p.connect(p.GUI)
@@ -29,7 +27,8 @@ class PyBulletEnv(gym.Env):
         p.setGravity(0,0,-9.8) #normal gravity
         self.plane = p.loadURDF("plane.urdf") #sets floor
         self.model = p.loadSDF(model_path, globalScaling = 25)[0]#resizes, loads model, returns model id
-        p.resetBasePositionAndOrientation(self.model, model_offset, p.getQuaternionFromEuler([0, 0, 80.2])) #resets model position
+        self.model_offset = model_offset
+        p.resetBasePositionAndOrientation(self.model, self.model_offset, p.getQuaternionFromEuler([0, 0, 80.2])) #resets model position
         #self.sphere = p.loadURDF("sphere_small.urdf", globalScaling = 2) #visualizes target position
 
         self.ctrl = ctrl #control, list of all joints in right arm (shoulder, elbow, wrist + metacarpus for measuring hand pos)
@@ -143,8 +142,8 @@ class PyBulletEnv(gym.Env):
 
 class Mouse_Env(PyBulletEnv):
 
-    def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep):
-        PyBulletEnv.__init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep)
+    def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset):
+        PyBulletEnv.__init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset)
         u = self.container.muscles.activations
         self.muscle_params = {}
         self.muscle_excitation = {}
