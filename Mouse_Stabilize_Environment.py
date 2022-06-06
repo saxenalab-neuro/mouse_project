@@ -3,7 +3,6 @@ import numpy as np
 import model_utils
 import pybullet as p
 import pybullet_data
-import yaml
 
 #FOR MUSCLES
 #import farms_pylog as pylog
@@ -16,7 +15,7 @@ import yaml
 model_offset = (0.0, 0.0, 1.2) #z position modified with global scaling
 
 class PyBulletEnv(gym.Env):
-    def __init__(self, model_path, muscle_config_file, frame_skip, ctrl, timestep):
+    def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep):
         #####BUILDS SERVER AND LOADS MODEL#####
         self.client = p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
@@ -26,11 +25,20 @@ class PyBulletEnv(gym.Env):
         p.resetBasePositionAndOrientation(self.model, model_offset, p.getQuaternionFromEuler([0, 0, 80.2])) #resets model position
 
         self.ctrl = ctrl
+        self.pose_file = pose_file
         
-        #####MUSCLES#####
+        #####MUSCLES + DATA LOGGING#####
         #self.container = Container(max_iterations=int(2.5/0.001))
+
+        # Physics simulation to namespace
+        #self.sim_data = self.container.add_namespace('physics')
+        #self.create_tables()
+
+        #self.muscles = MusculoSkeletalSystem(self.container, 1e-3, config_path=muscle_config_file)
+
+        #model_utils.reset_model_position(self.model, self.pose_file)
+        
         #self.container.initialize()
-        #self.muscles = MusculoSkeletalSystem(self.container, 1e-3, muscle_config_file)
         #self.muscles.print_system() 
         #print("num states", self.muscles.muscle_sys.num_states)
         #self.muscles.setup_integrator()
@@ -66,16 +74,54 @@ class PyBulletEnv(gym.Env):
     def do_simulation(self, n_frames, forcesArray):
         for _ in range(n_frames):
             p.setJointMotorControlArray(self.model, self.ctrl, p.TORQUE_CONTROL, forces = forcesArray)
-            p.stepSimulation()
 
     #####DISCONNECTS SERVER#####
     def close(self):
         p.disconnect(self.client)
 
+    def create_tables(self):
+        self.sim_data.add_table('joint_positions')
+        self.sim_data.add_table('joint_velocity')
+        self.sim_data.add_table('distances')
+
+        self.sim_data.joint_positions.add_parameter('RShoulder_rotation')
+        self.sim_data.joint_positions.add_parameter('RShoulder_adduction')
+        self.sim_data.joint_positions.add_parameter('RShoulder_flexion')
+        self.sim_data.joint_positions.add_parameter('RElbow_flexion')
+        self.sim_data.joint_positions.add_parameter('RElbow_supination')
+        self.sim_data.joint_positions.add_parameter('RWrist_adduction')
+        self.sim_data.joint_positions.add_parameter('RWrist_flexion')
+        self.sim_data.joint_positions.add_parameter('RKnee')
+        self.sim_data.joint_positions.add_parameter('LKnee')
+        self.sim_data.joint_positions.add_parameter('LWrist_adduction')
+        self.sim_data.joint_positions.add_parameter('LWrist_flexion')
+
+        self.sim_data.joint_velocity.add_parameter('RShoulder_rotation')
+        self.sim_data.joint_velocity.add_parameter('RShoulder_adduction')
+        self.sim_data.joint_velocity.add_parameter('RShoulder_flexion')
+        self.sim_data.joint_velocity.add_parameter('RElbow_flexion')
+        self.sim_data.joint_velocity.add_parameter('RElbow_supination')
+        self.sim_data.joint_velocity.add_parameter('RWrist_adduction')
+        self.sim_data.joint_velocity.add_parameter('Rwrist_flexion')
+        self.sim_data.joint_velocity.add_parameter('RKnee')
+        self.sim_data.joint_velocity.add_parameter('LKnee')
+        self.sim_data.joint_velocity.add_parameter('LWrist_adduction')
+        self.sim_data.joint_velocity.add_parameter('LWrist_flexion')
+
+        self.sim_data.distances.add_parameter('x')
+        self.sim_data.distances.add_parameter('y')
+        self.sim_data.distances.add_parameter('z')
+
+
+    def update_logs(self, joint_positions, joint_velocities, distances):
+        self.sim_data.joint_positions.values = np.asarray(joint_positions)
+        self.sim_data.joint_velocity.values = np.asarray(joint_velocities)
+        self.sim_data.distances.values = np.asarray(distances)
+
 class Mouse_Stability_Env(PyBulletEnv):
 
-    def __init__(self, model_path, muscle_config_file, frame_skip, ctrl, timestep):
-        PyBulletEnv.__init__(self, model_path, muscle_config_file, frame_skip, ctrl, timestep)
+    def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep):
+        PyBulletEnv.__init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep)
         #u = self.container.muscles.activations
         #for muscle in self.muscles.muscles.keys():
         #       self.muscle_params[muscle] = u.get_parameter('stim_{}'.format(muscle))
@@ -102,6 +148,14 @@ class Mouse_Stability_Env(PyBulletEnv):
 
         return reward, distances
 
+    def get_joint_positions_and_velocities(self):
+        joint_positions = []
+        joint_velocities = []
+        for i in range(len(self.ctrl)):
+            joint_positions.append(p.getJointState(self.model, self.ctrl[i])[0])
+            joint_velocities.append(p.getJointState(self.model, self.ctrl[i])[1])
+        return joint_positions, joint_velocities
+
     def is_done(self):
         if self.istep > self.timestep_limit:
             return True
@@ -119,9 +173,15 @@ class Mouse_Stability_Env(PyBulletEnv):
 
         done= self.is_done()
 
+        joint_positions, joint_velocities = self.get_joint_positions_and_velocities()
 
-        state = list(p.getJointStates(self.model, self.ctrl)[0]) #joint positions
-        state.append(list(p.getJointStates(self.model, self.ctrl)[1])) #joint velocities
+        p.stepSimulation()
+
+        #self.update_logs(joint_positions, joint_velocities, distances)
+        #self.container.update_log()
+
+        state = list(joint_positions) #joint positions
+        state.append(joint_velocities) #joint velocities
         state.append(distances)# lumbar movement
 
         

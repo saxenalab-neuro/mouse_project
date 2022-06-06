@@ -6,10 +6,10 @@ import model_utils
 from Mouse_RL_Environment import Mouse_Env
 from Mouse_Stabilize_Environment import Mouse_Stability_Env
 
-file_path = "/home/john_lazzari/mouse_project/files/mouse_test.sdf" ###Changed joints to fixed: model starts floating due to 0-gravity
-#file_path = "/files/mouse_with_joint_limits.sdf" ###Unfixed joints, no issues with 0-gravity
-pose_file = "/home/john_lazzari/mouse_project/files/default_pose.yaml"
-muscle_config_file = "/home/john_lazzari/mouse_project/files/right_forelimb.yaml"
+file_path = "./files/mouse_fixed.sdf" ###fixed mouse, arm training
+#file_path = "/files/mouse_test.sdf" ###test mouse, stability training
+pose_file = "./files/default_pose.yaml"
+muscle_config_file = "./files/right_forelimb.yaml"
 
 model_offset = (0.0, 0.0, 1.2) #z position modified with global scaling
 
@@ -31,6 +31,7 @@ ctrl = [104, 105, 106, 107, 108, 110, 111]
 #RElbow_supination - 108
 #RWrist_adduction - 110
 #RWrist_flexion - 111
+#RMetacarpus1_flextion - 112, use link (carpus) for pos
 #Lumbar2_bending - 12, use link(lumbar 1) for stability reward
 
 
@@ -38,7 +39,7 @@ ctrl = [104, 105, 106, 107, 108, 110, 111]
 frame_skip = 1
 n_frames = 1
 timestep = 10000
-mouseEnv = Mouse_Env(file_path, muscle_config_file, frame_skip, ctrl, timestep)
+mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep)
 
 #STABILITY ENV
 #mouseEnv = Mouse_Stability_Env(file_path, muscle_config_file, frame_skip, ctrl, timestep)
@@ -51,7 +52,6 @@ model_utils.disable_control(mouseEnv.model)
 #HAND STARTING POS: (1.3697159804379864, -0.09075569325649711, 0.2675971224717795)
 
 p.setTimeStep(.001)
-mouseEnv.reset(pose_file)
 
 for i in range (mouseEnv.timestep):
     #ARM TRAINING
