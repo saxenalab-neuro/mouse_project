@@ -26,9 +26,10 @@ class PyBulletEnv(gym.Env):
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0,0,-9.8) #normal gravity
         self.plane = p.loadURDF("plane.urdf") #sets floor
-        self.model = p.loadSDF(model_path, globalScaling = 25)[0]#resizes, loads model, returns model id
+        self.model = p.loadSDF(model_path)[0]#resizes, loads model, returns model id
         self.model_offset = model_offset
         p.resetBasePositionAndOrientation(self.model, self.model_offset, p.getQuaternionFromEuler([0, 0, 80.2])) #resets model position
+        self.stability = p.getLinkState(self.model, 12)[0]
         #self.sphere = p.loadURDF("sphere_small.urdf", globalScaling = 2) #visualizes target position
 
         self.ctrl = ctrl #control, list of all joints in right arm (shoulder, elbow, wrist + metacarpus for measuring hand pos)
@@ -46,8 +47,8 @@ class PyBulletEnv(gym.Env):
         model_utils.reset_model_position(self.model, self.pose_file)
         
         self.container.initialize()
-        #self.muscles.print_system() 
-        #print("num states", self.muscles.muscle_sys.num_states)
+        self.muscles.print_system() 
+        print("num states", self.muscles.muscle_sys.num_states)
         self.muscles.setup_integrator()
 
         #####META PARAMETERS FOR SIMULATION#####
@@ -70,6 +71,11 @@ class PyBulletEnv(gym.Env):
         self.theta = np.linspace(0, 2 * np.pi, self.timestep) #array from 0-2pi of timestep values
         #p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
 
+        p.resetDebugVisualizerCamera(
+            .6,
+            50,
+            -35,
+            [-.25, 0.21, -0.23])
         #self.seed()
 
     #def seed(self, seed = None):
@@ -93,6 +99,7 @@ class PyBulletEnv(gym.Env):
     def do_simulation(self, n_frames, forcesArray):
         for _ in range(n_frames):
             p.setJointMotorControlArray(self.model, self.ctrl, p.TORQUE_CONTROL, forces = forcesArray)
+            p.resetBasePositionAndOrientation(self.model, self.model_offset, p.getQuaternionFromEuler([0, 0, 80.2]))
 
     #####DISCONNECTS SERVER#####
     def close(self):

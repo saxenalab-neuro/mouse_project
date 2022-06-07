@@ -11,7 +11,7 @@ file_path = "./files/mouse_fixed.sdf" ###fixed mouse, arm training
 pose_file = "./files/default_pose.yaml"
 muscle_config_file = "./files/right_forelimb.yaml"
 
-model_offset = (0.0, 0.0, 0.0) #z position modified with global scaling
+model_offset = (0.0, 0.0, .0475) #z position modified with global scaling
 
 #ARM CONTROL
 ctrl = [104, 105, 106, 107, 108, 110, 111]
@@ -51,15 +51,13 @@ mouseEnv.reset(pose_file)
 
 for i in range (mouseEnv.timestep):
     #ARM TRAINING
-    forces = np.random.uniform(-.005, .005, size = 7) 
+    forces = np.random.uniform(-.3, .3, size = 7) 
 
     #STABILITY TRAINING
     #forces = np.random.uniform(-.005, .005, size = 4) #random activations to knees, LWrist
     #forces.append([0, 0, 0, 0, 0, 0, 0]) #no activations to right arm
     
-    p.stepSimulation()
-
-    #state, final_reward, done = mouseEnv.step(forces)
+    state, final_reward, done = mouseEnv.step(forces)
     #print("reward", final_reward, "| is not done?", done)  11
     #print("hand pos", p.getLinkState(modelid, 112)[0])
     #print(state)
