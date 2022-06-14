@@ -30,7 +30,7 @@ class PyBulletEnv(gym.Env):
         self.model_offset = model_offset
         p.resetBasePositionAndOrientation(self.model, self.model_offset, p.getQuaternionFromEuler([0, 0, 80.2])) #resets model position
         self.stability = p.getLinkState(self.model, 12)[0]
-        #self.sphere = p.loadURDF("sphere_small.urdf", globalScaling = 2) #visualizes target position
+        self.sphere = p.loadURDF("sphere_small.urdf", globalScaling=.1) #visualizes target position
 
         self.ctrl = ctrl #control, list of all joints in right arm (shoulder, elbow, wrist + metacarpus for measuring hand pos)
         self.pose_file = pose_file
@@ -66,21 +66,19 @@ class PyBulletEnv(gym.Env):
         self.y_pos = p.getLinkState(self.model, 112)[0][1]
         self.z_pos = p.getLinkState(self.model, 112)[0][2]
         self.target_pos = [self.x_pos, self.y_pos, self.z_pos]
-        self.center = [self.x_pos + .25 , self.y_pos, self.z_pos + .1]
-        self.radius = .20
+        self.center = [self.x_pos + .004 , self.y_pos, self.z_pos + .01]
+        self.radius = .01
         self.theta = np.linspace(0, 2 * np.pi, self.timestep) #array from 0-2pi of timestep values
-        #p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
+        p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
 
-        p.resetDebugVisualizerCamera(
-            .6,
-            50,
-            -35,
-            [-.25, 0.21, -0.23])
-        #self.seed()
+        p.resetDebugVisualizerCamera(.6, 50, -35, [-.25, 0.21, -0.23])
 
-    #def seed(self, seed = None):
-    #    self.np_random, seed = seeding.np_random(seed)
-    #    return [seed]
+        self.action_space = spaces.Box(low=np.array([-.05,-.05,-.05,-.05,-.05,-.05,-.05]), high=np.array([.05,.05,.05,.05,.05,.05,.05]), dtype=np.float32)
+        self.seed()
+
+    def seed(self, seed = None):
+        self.np_random, seed = seeding.np_random(seed)
+        return [seed]
 
     def get_ids(self):
         return self.client, self.model
@@ -205,7 +203,7 @@ class Mouse_Env(PyBulletEnv):
         self.x_pos = self.radius * np.cos(self.theta[self.istep - 1]) + self.center[0]
         self.z_pos = self.radius * np.sin(self.theta[self.istep - 1]) + self.center[2]
         self.target_pos = [self.x_pos, self.y_pos, self.z_pos]
-        #p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
+        p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
         #print("x, y, z", self.target_pos)
 
     def get_joint_positions_and_velocities(self):
@@ -217,13 +215,14 @@ class Mouse_Env(PyBulletEnv):
         return joint_positions, joint_velocities
 
     def update_state(self, joint_positions, joint_velocities, target_velocity, distances):
-        state = list(joint_positions) #joint positions
-        state.append(list(joint_velocities)) #joint velocities
-        state.append(list(self.target_pos)) #target position
-        state.append(list(target_velocity)) #target velocity
-        state.append(distances)# hand_pos - target_pos
-
+        state = [*list(joint_positions), *list(joint_velocities), *list(self.target_pos), *list(target_velocity), *list(distances)]
         return state
+
+    def get_cur_state(self):
+
+        joint_positions, joint_velocities = self.get_joint_positions_and_velocities()
+        _, distance = self.get_reward()
+        return [*list(joint_positions), *list(joint_velocities), *list(self.target_pos), *[0, 0, 0], *distance]
 
     def step(self, forces):
 
@@ -240,13 +239,13 @@ class Mouse_Env(PyBulletEnv):
         cost = self.get_cost(forces)
         final_reward= (5*reward) - (0.5*cost)
 
-        done= self.is_done()
+        done = self.is_done()
         
         prev_target = np.array(self.target_pos)
         self.update_target_pos()
         curr_target = np.array(self.target_pos)
 
-        target_vel = (curr_target - prev_target) / (self.frame_skip ) #need clarification about dt
+        target_vel = (curr_target - prev_target) / (.001) #need clarification about dt
 
         joint_positions, joint_velocities = self.get_joint_positions_and_velocities()
 
