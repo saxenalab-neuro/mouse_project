@@ -55,8 +55,8 @@ class PyBulletEnv(gym.Env):
         self.n_fixedsteps= 20
         self.timestep_limit= (1319 * 1) + self.n_fixedsteps
         # self._max_episode_steps= self.timestep_limit/ 2
-        self._max_episode_steps= 1000 #Does not matter. It is being set in the main.py where the total number of steps are being changed.
-        self.threshold_user= 0.064
+        self._max_episode_steps = timestep #Does not matter. It is being set in the main.py where the total number of steps are being changed.
+        self.threshold_user= 0.016
         self.timestep = timestep
         self.frame_skip= frame_skip
 
@@ -88,10 +88,10 @@ class PyBulletEnv(gym.Env):
         raise NotImplementedError
 
     def reset(self, pose_file):
-        self.istep= 0
+        self.istep = 0
         #carpus starting position, from getLinkState of metacarpus1
         self.target_pos = p.getLinkState(self.model, 112)[0]
-        self.threshold= self.threshold_user 
+        self.threshold = self.threshold_user 
         self.reset_model(pose_file)
 
     def do_simulation(self, n_frames, forcesArray):
@@ -189,6 +189,7 @@ class Mouse_Env(PyBulletEnv):
     def is_done(self):
         hand_pos =  np.array(p.getLinkState(self.model, 112)[0]) #(x, y, z)
         criteria = hand_pos - self.target_pos
+        print("criteria: {}".format(criteria))
 
         if self.istep < self.timestep_limit:
             if np.abs(criteria[0]) > self.threshold or np.abs(criteria[1]) > self.threshold or np.abs(criteria[2]) > self.threshold:
@@ -230,7 +231,7 @@ class Mouse_Env(PyBulletEnv):
 
         #can edit threshold with episodes
         if self.istep > self.n_fixedsteps:
-            self.threshold = 0.032
+            self.threshold = 0.006
 
         self.do_simulation(self.frame_skip, forces)
         self.muscles.step()

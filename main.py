@@ -4,6 +4,7 @@ import time
 import torch
 import argparse
 from sac import SAC
+import itertools
 
 import model_utils
 from Mouse_RL_Environment import Mouse_Env
@@ -37,7 +38,6 @@ ctrl = [104, 105, 106, 107, 108, 110, 111]
 #RWrist_flexion - 111
 #RMetacarpus1_flextion - 112, use link (carpus) for pos
 #Lumbar2_bending - 12, use link(lumbar 1) for stability reward
-
 
 if __name__ == "__main__":
 
@@ -98,7 +98,6 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
 
     model_utils.disable_control(mouseEnv.model)
-    mouseEnv.reset(pose_file)
     p.setTimeStep(.001)
 
     # Training Loop
@@ -110,13 +109,14 @@ if __name__ == "__main__":
     target_trajectory = []
     env_counter_his= []
 
-    for i in range(mouseEnv.timestep):
+    for i_episode in itertools.count(1):
 
         episode_reward = 0
         episode_steps = 0
         action_list= []
         done = False
 
+        mouseEnv.reset(pose_file)
         state = mouseEnv.get_cur_state()
 
         ep_trajectory = []
@@ -125,7 +125,7 @@ if __name__ == "__main__":
         h_prev = torch.zeros(size=(1, 1, args.hidden_size))
         c_prev = torch.zeros(size=(1, 1, args.hidden_size))
 
-        while not done:
+        for i in range(timestep):
 
             if args.start_steps > total_numsteps:
                 action = mouseEnv.action_space.sample()  # Sample random action
@@ -148,6 +148,7 @@ if __name__ == "__main__":
                     updates += 1
 
             next_state, reward, done = mouseEnv.step(action)
+            print(done)
 
             episode_reward += reward
 
@@ -160,6 +161,9 @@ if __name__ == "__main__":
             else:
                 ep_trajectory.append((state, action, np.array([reward]), next_state, np.array([mask])))
 
+            if done:
+                break
+
             state = next_state
             h_prev = h_current
             c_prev = c_current
@@ -168,6 +172,9 @@ if __name__ == "__main__":
             total_numsteps += 1 
         
         policy_memory.push(ep_trajectory)
+
+        if total_numsteps > args.num_steps:
+            break
 
     mouseEnv.close() #disconnects server
 
