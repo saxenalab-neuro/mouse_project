@@ -30,7 +30,10 @@ class PyBulletEnv(gym.Env):
         self.model_offset = model_offset
         p.resetBasePositionAndOrientation(self.model, self.model_offset, p.getQuaternionFromEuler([0, 0, 80.2])) #resets model position
         self.stability = p.getLinkState(self.model, 12)[0]
-        self.sphere = p.loadURDF("sphere_small.urdf", globalScaling=.1) #visualizes target position
+        self.use_sphere = False
+
+        if self.use_sphere:
+            self.sphere = p.loadURDF("sphere_small.urdf", globalScaling=.1) #visualizes target position
 
         self.ctrl = ctrl #control, list of all joints in right arm (shoulder, elbow, wrist + metacarpus for measuring hand pos)
         self.pose_file = pose_file
@@ -53,23 +56,28 @@ class PyBulletEnv(gym.Env):
 
         #####META PARAMETERS FOR SIMULATION#####
         self.n_fixedsteps= 20
-        self.timestep_limit= (1319 * 1) + self.n_fixedsteps
+        self.timestep_limit = (1319 * 1) + self.n_fixedsteps
         # self._max_episode_steps= self.timestep_limit/ 2
         self._max_episode_steps = timestep #Does not matter. It is being set in the main.py where the total number of steps are being changed.
-        self.threshold_user= 0.016
+        self.threshold_user= 0.008
         self.timestep = timestep
         self.frame_skip= frame_skip
 
         #####TARGET POSITION USING POINT IN SPACE: X, Y, Z#####
         ###x, y, z for initializing from hand starting position, target_pos for updating
         self.x_pos = p.getLinkState(self.model, 112)[0][0]
+        self.orig_x = self.x_pos
         self.y_pos = p.getLinkState(self.model, 112)[0][1]
+        self.orig_y = self.y_pos
         self.z_pos = p.getLinkState(self.model, 112)[0][2]
-        self.target_pos = [self.x_pos, self.y_pos, self.z_pos]
-        self.center = [self.x_pos + .004 , self.y_pos, self.z_pos + .01]
+        self.orig_z = self.z_pos
+
         self.radius = .01
-        self.theta = np.linspace(0, 2 * np.pi, self.timestep) #array from 0-2pi of timestep values
-        p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
+        self.theta = np.linspace(3*np.pi/2, -np.pi/2, self.timestep) #array from 0-2pi of timestep values
+        self.center = [self.x_pos + .003, self.y_pos, self.z_pos + .01]
+        self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
+        if self.use_sphere:
+            p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
 
         p.resetDebugVisualizerCamera(.6, 50, -35, [-.25, 0.21, -0.23])
 
@@ -90,9 +98,11 @@ class PyBulletEnv(gym.Env):
     def reset(self, pose_file):
         self.istep = 0
         #carpus starting position, from getLinkState of metacarpus1
-        self.target_pos = p.getLinkState(self.model, 112)[0]
-        self.threshold = self.threshold_user 
         self.reset_model(pose_file)
+        self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
+        if self.use_sphere:
+            p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
+        self.threshold = self.threshold_user 
 
     def do_simulation(self, n_frames, forcesArray):
         for _ in range(n_frames):
@@ -139,6 +149,7 @@ class PyBulletEnv(gym.Env):
         self.sim_data.distances.add_parameter('z')
    
     def update_logs(self, joint_positions, joint_velocities, target_velocity, distances):
+
         self.sim_data.joint_positions.values = np.asarray(joint_positions)
         self.sim_data.joint_velocity.values = np.asarray(joint_velocities)
         self.sim_data.target_positions.values = np.asarray(self.target_pos)
@@ -189,7 +200,6 @@ class Mouse_Env(PyBulletEnv):
     def is_done(self):
         hand_pos =  np.array(p.getLinkState(self.model, 112)[0]) #(x, y, z)
         criteria = hand_pos - self.target_pos
-        print("criteria: {}".format(criteria))
 
         if self.istep < self.timestep_limit:
             if np.abs(criteria[0]) > self.threshold or np.abs(criteria[1]) > self.threshold or np.abs(criteria[2]) > self.threshold:
@@ -204,7 +214,9 @@ class Mouse_Env(PyBulletEnv):
         self.x_pos = self.radius * np.cos(self.theta[self.istep - 1]) + self.center[0]
         self.z_pos = self.radius * np.sin(self.theta[self.istep - 1]) + self.center[2]
         self.target_pos = [self.x_pos, self.y_pos, self.z_pos]
-        p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
+
+        if self.use_sphere:
+            p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
         #print("x, y, z", self.target_pos)
 
     def get_joint_positions_and_velocities(self):
@@ -231,7 +243,7 @@ class Mouse_Env(PyBulletEnv):
 
         #can edit threshold with episodes
         if self.istep > self.n_fixedsteps:
-            self.threshold = 0.006
+            self.threshold = 0.008
 
         self.do_simulation(self.frame_skip, forces)
         self.muscles.step()

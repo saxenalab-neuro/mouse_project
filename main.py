@@ -8,7 +8,6 @@ import itertools
 
 import model_utils
 from Mouse_RL_Environment import Mouse_Env
-from Mouse_Stabilize_Environment import Mouse_Stability_Env
 from replay_memory import ReplayMemory, PolicyReplayMemory
 
 file_path = "./files/mouse_fixed.sdf" ###fixed mouse, arm training
@@ -86,7 +85,7 @@ if __name__ == "__main__":
     ###PARAMETERS###
     frame_skip = 1
     n_frames = 1
-    timestep = 1000
+    timestep = (1319 * 1) + 20
     mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset)
     # hard code num_inputs, 
     agent = SAC(23, mouseEnv.action_space, args)
@@ -140,6 +139,9 @@ if __name__ == "__main__":
                     # Update parameters of all the networks
                     critic_1_loss, critic_2_loss, policy_loss, ent_loss, alpha = agent.update_parameters(policy_memory, args.policy_batch_size, updates)
 
+                    print('critic_1_loss: {}'.format(critic_1_loss))
+                    print('critic_2_loss: {}'.format(critic_2_loss))
+                    print('policy_loss: {}'.format(policy_loss))
                     # writer.add_scalar('loss/critic_1', critic_1_loss, updates)
                     # writer.add_scalar('loss/critic_2', critic_2_loss, updates)
                     # writer.add_scalar('loss/policy', policy_loss, updates)
@@ -148,7 +150,6 @@ if __name__ == "__main__":
                     updates += 1
 
             next_state, reward, done = mouseEnv.step(action)
-            print(done)
 
             episode_reward += reward
 
@@ -161,15 +162,15 @@ if __name__ == "__main__":
             else:
                 ep_trajectory.append((state, action, np.array([reward]), next_state, np.array([mask])))
 
-            if done:
-                break
-
             state = next_state
             h_prev = h_current
             c_prev = c_current
 
             episode_steps += 1
             total_numsteps += 1 
+
+            if done:
+                break
         
         policy_memory.push(ep_trajectory)
 
