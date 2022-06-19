@@ -4,6 +4,7 @@ import time
 import torch
 import argparse
 from sac import SAC
+from sac_mlp import SAC_MLP
 import itertools
 
 import model_utils
@@ -51,8 +52,8 @@ if __name__ == "__main__":
                         help='discount factor for reward (default: 0.99)')
     parser.add_argument('--tau', type=float, default=0.005, metavar='G',
                         help='target smoothing coefficient(τ) (default: 0.005)')
-    parser.add_argument('--lr', type=float, default=0.0003, metavar='G',
-                        help='learning rate (default: 0.0003)')
+    parser.add_argument('--lr', type=float, default=0.001, metavar='G',
+                        help='learning rate (default: 0.001)')
     parser.add_argument('--alpha', type=float, default=0.2, metavar='G',
                         help='Temperature parameter α determines the relative importance of the entropy\
                                 term against the reward (default: 0.2)')
@@ -85,7 +86,7 @@ if __name__ == "__main__":
     ###PARAMETERS###
     frame_skip = 1
     n_frames = 1
-    timestep = (1319 * 1) + 20
+    timestep = 50
     mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset)
     # hard code num_inputs, 
     agent = SAC(23, mouseEnv.action_space, args)
@@ -126,10 +127,11 @@ if __name__ == "__main__":
 
         for i in range(timestep):
 
-            if args.start_steps > total_numsteps:
-                action = mouseEnv.action_space.sample()  # Sample random action
-            else:
-                action, h_current, c_current = agent.select_action(state, h_prev, c_prev)  # Sample action from policy
+            with torch.no_grad():
+                if args.start_steps > total_numsteps:
+                    action = mouseEnv.action_space.sample()  # Sample random action
+                else:
+                    action, h_current, c_current = agent.select_action(state, h_prev, c_prev)  # Sample action from policy
 
             action_list.append(action)
 
@@ -139,9 +141,9 @@ if __name__ == "__main__":
                     # Update parameters of all the networks
                     critic_1_loss, critic_2_loss, policy_loss, ent_loss, alpha = agent.update_parameters(policy_memory, args.policy_batch_size, updates)
 
-                    print('critic_1_loss: {}'.format(critic_1_loss))
-                    print('critic_2_loss: {}'.format(critic_2_loss))
-                    print('policy_loss: {}'.format(policy_loss))
+                    #print('critic_1_loss: {}'.format(critic_1_loss))
+                    #print('critic_2_loss: {}'.format(critic_2_loss))
+                    #print('policy_loss: {}'.format(policy_loss))
                     # writer.add_scalar('loss/critic_1', critic_1_loss, updates)
                     # writer.add_scalar('loss/critic_2', critic_2_loss, updates)
                     # writer.add_scalar('loss/policy', policy_loss, updates)
@@ -149,7 +151,9 @@ if __name__ == "__main__":
                     # writer.add_scalar('entropy_temprature/alpha', alpha, updates)
                     updates += 1
 
+            print(action)
             next_state, reward, done = mouseEnv.step(action)
+            #print("reward: {}".format(reward))
 
             episode_reward += reward
 
@@ -171,6 +175,8 @@ if __name__ == "__main__":
 
             if done:
                 break
+        
+        print('timestep: {}'.format(i_episode))
         
         policy_memory.push(ep_trajectory)
 

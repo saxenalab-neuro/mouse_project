@@ -60,6 +60,29 @@ class ValueNetwork(nn.Module):
 
 #         return x1, x2
 
+class MLP_QNetwork(nn.Module):
+    def __init__(self, num_inputs, num_actions, hidden_dim):
+        super(MLP_QNetwork, self).__init__()
+
+        # Q1 architecture
+        self.linear1 = nn.Linear(num_inputs + num_actions, hidden_dim)
+        self.linear2 = nn.Linear(hidden_dim, 1)
+
+        # Q2 architecture
+        self.linear3 = nn.Linear(num_inputs + num_actions, hidden_dim)
+        self.linear4 = nn.Linear(hidden_dim, 1)
+
+    def forward(self, state_action_packed):
+
+        fc_branch_1 = F.relu(self.linear1(state_action_packed))
+        out_1 = F.relu(self.linear2(fc_branch_1))
+
+        fc_branch_2 = F.relu(self.linear3(state_action_packed))
+        out_2 = F.relu(self.linear4(fc_branch_2))
+
+        return out_1, out_2
+
+
 class QNetwork(nn.Module):
     def __init__(self, num_inputs, num_actions, hidden_dim):
         super(QNetwork, self).__init__()
@@ -196,8 +219,9 @@ class GaussianPolicyLSTM(nn.Module):
         # action rescaling
         # Pass none action space and adjust the action scale and bias manually
         if action_space is None:
-            self.action_scale = torch.tensor(0.5)
-            self.action_bias = torch.tensor(0.5)
+            # Try different scales to see what works best
+            self.action_scale = torch.tensor(0.0001)
+            self.action_bias = torch.tensor(0.0001)
         else:
             self.action_scale = torch.FloatTensor(
                 (action_space.high - action_space.low) / 2.)
@@ -239,12 +263,12 @@ class GaussianPolicyLSTM(nn.Module):
         normal = Normal(mean, std)
         x_t = normal.rsample()
         y_t = torch.tanh(x_t)
-        action = y_t * self.action_scale + self.action_bias
+        action = y_t * self.action_scale
         log_prob = normal.log_prob(x_t)
         # Enforce the action_bounds
         log_prob -= torch.log(self.action_scale * (1 - y_t.pow(2)) + epsilon)
         log_prob = log_prob.sum(1, keepdim=True)
-        mean = torch.tanh(mean) * self.action_scale + self.action_bias
+        mean = torch.tanh(mean) * self.action_scale
 
         if sampling == False:
             action = action.reshape(mean_size[0], mean_size[1], mean_size[2])
