@@ -30,7 +30,7 @@ class PyBulletEnv(gym.Env):
         self.model_offset = model_offset
         p.resetBasePositionAndOrientation(self.model, self.model_offset, p.getQuaternionFromEuler([0, 0, 80.2])) #resets model position
         self.stability = p.getLinkState(self.model, 12)[0]
-        self.use_sphere = True
+        self.use_sphere = False
 
         if self.use_sphere:
             self.sphere = p.loadURDF("sphere_small.urdf", globalScaling=.1) #visualizes target position
@@ -66,20 +66,17 @@ class PyBulletEnv(gym.Env):
         #####TARGET POSITION USING POINT IN SPACE: X, Y, Z#####
         ###x, y, z for initializing from hand starting position, target_pos for updating
         self.x_pos = p.getLinkState(self.model, 112)[0][0]
-        self.orig_x = self.x_pos
         self.y_pos = p.getLinkState(self.model, 112)[0][1]
-        self.orig_y = self.y_pos
         self.z_pos = p.getLinkState(self.model, 112)[0][2]
-        self.orig_z = self.z_pos
 
-        self.radius = .0045
-        self.theta = np.linspace(np.pi, -np.pi, self.timestep) #array from 0-2pi of timestep values
-        self.center = [self.x_pos + .003, self.y_pos, self.z_pos + .005]
+        self.radius = .006
+        self.theta = np.linspace(7*np.pi/6, -5*np.pi/6, self.timestep) #array from 0-2pi of timestep values
+        self.center = [self.x_pos + .004, self.y_pos, self.z_pos + .005]
         self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
         if self.use_sphere:
             p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
 
-        p.resetDebugVisualizerCamera(.6, 50, -35, [-.25, 0.21, -0.23])
+        p.resetDebugVisualizerCamera(0.3, 15, -10, [0, 0.21, 0])
 
         self.action_space = spaces.Box(low=np.array([-.05,-.05,-.05,-.05,-.05,-.05,-.05]), high=np.array([.05,.05,.05,.05,.05,.05,.05]), dtype=np.float32)
         self.seed()
