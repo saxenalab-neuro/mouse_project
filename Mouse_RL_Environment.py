@@ -30,7 +30,7 @@ class PyBulletEnv(gym.Env):
         self.model_offset = model_offset
         p.resetBasePositionAndOrientation(self.model, self.model_offset, p.getQuaternionFromEuler([0, 0, 80.2])) #resets model position
         self.stability = p.getLinkState(self.model, 12)[0]
-        self.use_sphere = False
+        self.use_sphere = True
 
         if self.use_sphere:
             self.sphere = p.loadURDF("sphere_small.urdf", globalScaling=.1) #visualizes target position
@@ -59,7 +59,7 @@ class PyBulletEnv(gym.Env):
         self.timestep_limit = 50
         # self._max_episode_steps= self.timestep_limit/ 2
         self._max_episode_steps = timestep #Does not matter. It is being set in the main.py where the total number of steps are being changed.
-        self.threshold_user= 0.007
+        self.threshold_user= 0.008
         self.timestep = timestep
         self.frame_skip= frame_skip
 
@@ -72,9 +72,9 @@ class PyBulletEnv(gym.Env):
         self.z_pos = p.getLinkState(self.model, 112)[0][2]
         self.orig_z = self.z_pos
 
-        self.radius = .0035
-        self.theta = np.linspace(3*np.pi/2, -np.pi/2, self.timestep) #array from 0-2pi of timestep values
-        self.center = [self.x_pos, self.y_pos, self.z_pos + .01]
+        self.radius = .0045
+        self.theta = np.linspace(np.pi, -np.pi, self.timestep) #array from 0-2pi of timestep values
+        self.center = [self.x_pos + .003, self.y_pos, self.z_pos + .005]
         self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
         if self.use_sphere:
             p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
@@ -243,7 +243,7 @@ class Mouse_Env(PyBulletEnv):
 
         #can edit threshold with episodes
         if self.istep > self.n_fixedsteps:
-            self.threshold = 0.007
+            self.threshold = 0.008
 
         self.do_simulation(self.frame_skip, forces)
         self.muscles.step()

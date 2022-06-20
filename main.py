@@ -12,7 +12,6 @@ from Mouse_RL_Environment import Mouse_Env
 from replay_memory import ReplayMemory, PolicyReplayMemory
 
 file_path = "./files/mouse_fixed.sdf" ###fixed mouse, arm training
-#file_path = "/files/mouse_test.sdf" ###test mouse, stability training
 pose_file = "./files/default_pose.yaml"
 muscle_config_file = "./files/right_forelimb.yaml"
 
@@ -21,14 +20,7 @@ model_offset = (0.0, 0.0, .0475) #z position modified with global scaling
 #ARM CONTROL
 ctrl = [104, 105, 106, 107, 108, 110, 111]
 
-#STABILITY CONTROL
-#ctrl = [142, 125, 91, 92, 104, 105, 106, 107, 108, 110, 111]
-
 ###JOINT TO INDEX###
-#RKnee - 142
-#LKnee - 125
-#LWrist_adduction - 91
-#LWrist_flexion - 92
 #RShoulder_rotation - 104
 #RShoulder_adduction - 105
 #RShoulder_flexion - 106
