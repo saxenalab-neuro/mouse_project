@@ -1,6 +1,8 @@
 import os
 import torch
+import numpy as np
 import torch.nn.functional as F
+import torch.optim as optim
 from torch.optim import Adam
 from utils1 import soft_update, hard_update
 from model import GaussianPolicy, GaussianPolicyLSTM, QNetwork, DeterministicPolicy
@@ -34,7 +36,7 @@ class SAC(object):
                 self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
                 self.alpha_optim = Adam([self.log_alpha], lr=args.lr)
 
-            self.policy = GaussianPolicyLSTM(num_inputs, action_space.shape[0], args.hidden_size, action_space).to(self.device)
+            self.policy = GaussianPolicyLSTM(num_inputs, action_space.shape[0], args.hidden_size, action_space=None).to(self.device)
             self.policy_optim = Adam(self.policy.parameters(), lr=args.lr)
 
         else:
@@ -86,9 +88,10 @@ class SAC(object):
         reward_batch = self.filter_padded(reward_batch_p, seq_lengths)
         mask_batch = self.filter_padded(mask_batch_p, seq_lengths)
 
-        #We have padded batches of state, action, reward, next_state and mask from here downwards. We also have corresponding sequence lengths seq_lens
+        # We have padded batches of state, action, reward, next_state and mask from here downwards. We also have corresponding sequence lengths seq_lens
         # batch_p stands for padded batch or tensor of size (B, L_max, H)
         with torch.no_grad():
+
             next_state_action_p, next_state_log_pi_p, _, _, _ = self.policy.sample(next_state_batch, h_prev=hidden_out[0], c_prev= hidden_out[1], sampling= False)
             next_state_state_action_p = torch.cat((next_state_batch_p, next_state_action_p), dim=2)
             next_state_state_action = pack_padded_sequence(next_state_state_action_p, seq_lengths, batch_first= True, enforce_sorted= False)

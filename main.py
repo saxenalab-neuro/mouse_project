@@ -4,8 +4,8 @@ import time
 import torch
 import argparse
 from sac import SAC
-from sac_mlp import SAC_MLP
 import itertools
+import matplotlib.pyplot as plt
 
 import model_utils
 from Mouse_RL_Environment import Mouse_Env
@@ -101,6 +101,9 @@ if __name__ == "__main__":
     target_trajectory = []
     env_counter_his= []
 
+    reward_tracker = []
+    policy_loss_tracker = []
+
     for i_episode in itertools.count(1):
 
         episode_reward = 0
@@ -133,9 +136,10 @@ if __name__ == "__main__":
                     # Update parameters of all the networks
                     critic_1_loss, critic_2_loss, policy_loss, ent_loss, alpha = agent.update_parameters(policy_memory, args.policy_batch_size, updates)
 
-                    #print('critic_1_loss: {}'.format(critic_1_loss))
-                    #print('critic_2_loss: {}'.format(critic_2_loss))
-                    #print('policy_loss: {}'.format(policy_loss))
+                    print('critic_1_loss: {}'.format(critic_1_loss))
+                    print('critic_2_loss: {}'.format(critic_2_loss))
+                    print('policy_loss: {}'.format(policy_loss))
+                    policy_loss_tracker.append(policy_loss)
                     # writer.add_scalar('loss/critic_1', critic_1_loss, updates)
                     # writer.add_scalar('loss/critic_2', critic_2_loss, updates)
                     # writer.add_scalar('loss/policy', policy_loss, updates)
@@ -143,9 +147,7 @@ if __name__ == "__main__":
                     # writer.add_scalar('entropy_temprature/alpha', alpha, updates)
                     updates += 1
 
-            print(action)
             next_state, reward, done = mouseEnv.step(action)
-            #print("reward: {}".format(reward))
 
             episode_reward += reward
 
@@ -168,12 +170,19 @@ if __name__ == "__main__":
             if done:
                 break
         
-        print('timestep: {}'.format(i_episode))
+        print('reward: {}'.format(episode_reward))
+        reward_tracker.append(episode_reward)
         
         policy_memory.push(ep_trajectory)
 
         if total_numsteps > args.num_steps:
             break
+
+    reward_tracker = np.array(reward_tracker)
+    policy_loss_tracker = np.array(policy_loss_tracker)
+
+    np.savetxt('rewards.txt', reward_tracker)
+    np.savetxt('policy_losses.txt', policy_loss_tracker)
 
     mouseEnv.close() #disconnects server
 
