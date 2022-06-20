@@ -263,12 +263,12 @@ class GaussianPolicyLSTM(nn.Module):
         normal = Normal(mean, std)
         x_t = normal.rsample()
         y_t = torch.tanh(x_t)
-        action = y_t * self.action_scale
+        action = y_t * self.action_scale + self.action_bias
         log_prob = normal.log_prob(x_t)
         # Enforce the action_bounds
         log_prob -= torch.log(self.action_scale * (1 - y_t.pow(2)) + epsilon)
         log_prob = log_prob.sum(1, keepdim=True)
-        mean = torch.tanh(mean) * self.action_scale
+        mean = torch.tanh(mean) * self.action_scale + self.action_bias
 
         if sampling == False:
             action = action.reshape(mean_size[0], mean_size[1], mean_size[2])
