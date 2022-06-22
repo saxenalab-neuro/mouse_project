@@ -79,7 +79,7 @@ if __name__ == "__main__":
     ###PARAMETERS###
     frame_skip = 1
     n_frames = 1
-    timestep = 150
+    timestep = 35
     mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset)
     # hard code num_inputs, 
     agent = SAC(23, mouseEnv.action_space, args)
@@ -112,7 +112,7 @@ if __name__ == "__main__":
         action_list= []
         done = False
 
-        model_utils.disable_control(mouseEnv.model)
+        #model_utils.disable_control(mouseEnv.model)
         mouseEnv.reset(pose_file)
         state = mouseEnv.get_cur_state()
 

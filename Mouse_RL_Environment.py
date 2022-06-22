@@ -22,7 +22,7 @@ class PyBulletEnv(gym.Env):
     def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset):
         #####BUILDS SERVER AND LOADS MODEL#####
         #self.client = p.connect(p.GUI)
-        self.client = p.connect(p.GUI)
+        self.client = p.connect(p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0,0,-9.81) #normal gravity
         self.plane = p.loadURDF("plane.urdf") #sets floor
@@ -54,11 +54,11 @@ class PyBulletEnv(gym.Env):
         self.muscles.setup_integrator()
 
         #####META PARAMETERS FOR SIMULATION#####
-        self.n_fixedsteps= 20
-        self.timestep_limit = 50
+        self.n_fixedsteps= 5
+        self.timestep_limit = 35
         # self._max_episode_steps= self.timestep_limit/ 2
         self._max_episode_steps = timestep #Does not matter. It is being set in the main.py where the total number of steps are being changed.
-        self.threshold_user= 0.0075
+        self.threshold_user= 0.0095
         self.timestep = timestep
         self.frame_skip= frame_skip
 
@@ -104,7 +104,7 @@ class PyBulletEnv(gym.Env):
 
     def do_simulation(self, n_frames, forcesArray):
         for _ in range(n_frames):
-            p.setJointMotorControlArray(self.model, self.ctrl, p.TORQUE_CONTROL, forces = forcesArray)
+            p.setJointMotorControlArray(self.model, self.ctrl, p.TORQUE_CONTROL, forces=forcesArray)
             #p.resetBasePositionAndOrientation(self.model, self.model_offset, p.getQuaternionFromEuler([0, 0, 80.2]))
 
     #####DISCONNECTS SERVER#####
@@ -241,7 +241,7 @@ class Mouse_Env(PyBulletEnv):
 
         #can edit threshold with episodes
         if self.istep > self.n_fixedsteps:
-            self.threshold = 0.0075
+            self.threshold = 0.0085
 
         self.do_simulation(self.frame_skip, forces)
         self.muscles.step()

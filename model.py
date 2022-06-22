@@ -220,8 +220,8 @@ class GaussianPolicyLSTM(nn.Module):
         # Pass none action space and adjust the action scale and bias manually
         if action_space is None:
             # Try different scales to see what works best
-            self.action_scale = torch.tensor(0.015)
-            self.action_bias = torch.tensor(0.015)
+            self.action_scale = torch.tensor(0.01)
+            self.action_bias = torch.tensor(0.01)
         else:
             self.action_scale = torch.FloatTensor(
                 (action_space.high - action_space.low) / 2.)
@@ -263,12 +263,12 @@ class GaussianPolicyLSTM(nn.Module):
         normal = Normal(mean, std)
         x_t = normal.rsample()
         y_t = torch.tanh(x_t)
-        action = y_t * self.action_scale + self.action_bias
+        action = y_t * self.action_scale #+ self.action_bias
         log_prob = normal.log_prob(x_t)
         # Enforce the action_bounds
         log_prob -= torch.log(self.action_scale * (1 - y_t.pow(2)) + epsilon)
         log_prob = log_prob.sum(1, keepdim=True)
-        mean = torch.tanh(mean) * self.action_scale + self.action_bias
+        mean = torch.tanh(mean) * self.action_scale #+ self.action_bias
 
         if sampling == False:
             action = action.reshape(mean_size[0], mean_size[1], mean_size[2])
@@ -281,8 +281,6 @@ class GaussianPolicyLSTM(nn.Module):
         self.action_scale = self.action_scale.to(device)
         self.action_bias = self.action_bias.to(device)
         return super(GaussianPolicyLSTM, self).to(device)
-
-
 
 class DeterministicPolicy(nn.Module):
     def __init__(self, num_inputs, num_actions, hidden_dim, action_space=None):
