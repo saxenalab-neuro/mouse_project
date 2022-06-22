@@ -6,6 +6,7 @@ import argparse
 from sac import SAC
 import itertools
 import matplotlib.pyplot as plt
+from model_utils import disable_control
 
 import model_utils
 from Mouse_RL_Environment import Mouse_Env
@@ -44,7 +45,7 @@ if __name__ == "__main__":
                         help='discount factor for reward (default: 0.99)')
     parser.add_argument('--tau', type=float, default=0.005, metavar='G',
                         help='target smoothing coefficient(τ) (default: 0.005)')
-    parser.add_argument('--lr', type=float, default=0.001, metavar='G',
+    parser.add_argument('--lr', type=float, default=0.0003, metavar='G',
                         help='learning rate (default: 0.001)')
     parser.add_argument('--alpha', type=float, default=0.2, metavar='G',
                         help='Temperature parameter α determines the relative importance of the entropy\
@@ -78,7 +79,7 @@ if __name__ == "__main__":
     ###PARAMETERS###
     frame_skip = 1
     n_frames = 1
-    timestep = 50
+    timestep = 150
     mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset)
     # hard code num_inputs, 
     agent = SAC(23, mouseEnv.action_space, args)
@@ -111,6 +112,7 @@ if __name__ == "__main__":
         action_list= []
         done = False
 
+        model_utils.disable_control(mouseEnv.model)
         mouseEnv.reset(pose_file)
         state = mouseEnv.get_cur_state()
 
@@ -136,9 +138,9 @@ if __name__ == "__main__":
                     # Update parameters of all the networks
                     critic_1_loss, critic_2_loss, policy_loss, ent_loss, alpha = agent.update_parameters(policy_memory, args.policy_batch_size, updates)
 
-                    print('critic_1_loss: {}'.format(critic_1_loss))
-                    print('critic_2_loss: {}'.format(critic_2_loss))
-                    print('policy_loss: {}'.format(policy_loss))
+                    #print('critic_1_loss: {}'.format(critic_1_loss))
+                    #print('critic_2_loss: {}'.format(critic_2_loss))
+                    #print('policy_loss: {}'.format(policy_loss))
                     policy_loss_tracker.append(policy_loss)
                     # writer.add_scalar('loss/critic_1', critic_1_loss, updates)
                     # writer.add_scalar('loss/critic_2', critic_2_loss, updates)
@@ -177,6 +179,7 @@ if __name__ == "__main__":
 
         if total_numsteps > args.num_steps:
             break
+
 
     reward_tracker = np.array(reward_tracker)
     policy_loss_tracker = np.array(policy_loss_tracker)

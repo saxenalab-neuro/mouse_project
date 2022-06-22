@@ -24,7 +24,7 @@ class PyBulletEnv(gym.Env):
         #self.client = p.connect(p.GUI)
         self.client = p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
-        p.setGravity(0,0,-9.8) #normal gravity
+        p.setGravity(0,0,-9.81) #normal gravity
         self.plane = p.loadURDF("plane.urdf") #sets floor
         self.model = p.loadSDF(model_path)[0]#resizes, loads model, returns model id
         self.model_offset = model_offset
@@ -59,7 +59,7 @@ class PyBulletEnv(gym.Env):
         self.timestep_limit = 50
         # self._max_episode_steps= self.timestep_limit/ 2
         self._max_episode_steps = timestep #Does not matter. It is being set in the main.py where the total number of steps are being changed.
-        self.threshold_user= 0.007
+        self.threshold_user= 0.0075
         self.timestep = timestep
         self.frame_skip= frame_skip
 
@@ -230,9 +230,9 @@ class Mouse_Env(PyBulletEnv):
 
     def get_cur_state(self):
 
-        joint_positions, joint_velocities = self.get_joint_positions_and_velocities()
+        joint_positions, _ = self.get_joint_positions_and_velocities()
         _, distance = self.get_reward()
-        return [*list(joint_positions), *list(joint_velocities), *list(self.target_pos), *[0, 0, 0], *distance]
+        return [*list(joint_positions), *[0., 0., 0., 0., 0., 0., 0.], *list(self.target_pos), *[0, 0, 0], *distance]
 
     def step(self, forces):
 
@@ -240,14 +240,14 @@ class Mouse_Env(PyBulletEnv):
 
         #can edit threshold with episodes
         if self.istep > self.n_fixedsteps:
-            self.threshold = 0.007
+            self.threshold = 0.0075
 
         self.do_simulation(self.frame_skip, forces)
         self.muscles.step()
         
         reward, distances = self.get_reward()
         cost = self.get_cost(forces)
-        final_reward= (5*reward) - (.5*cost)
+        final_reward= (3*reward) - (1.5*cost)
 
         done = self.is_done()
         

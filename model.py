@@ -220,8 +220,8 @@ class GaussianPolicyLSTM(nn.Module):
         # Pass none action space and adjust the action scale and bias manually
         if action_space is None:
             # Try different scales to see what works best
-            self.action_scale = torch.tensor(0.0001)
-            self.action_bias = torch.tensor(0.0001)
+            self.action_scale = torch.tensor(0.015)
+            self.action_bias = torch.tensor(0.015)
         else:
             self.action_scale = torch.FloatTensor(
                 (action_space.high - action_space.low) / 2.)
