@@ -29,7 +29,6 @@ class PyBulletEnv(gym.Env):
         self.model = p.loadSDF(model_path)[0]#resizes, loads model, returns model id
         self.model_offset = model_offset
         p.resetBasePositionAndOrientation(self.model, self.model_offset, p.getQuaternionFromEuler([0, 0, 80.2])) #resets model position
-        self.stability = p.getLinkState(self.model, 12)[0]
         self.use_sphere = False
 
         if self.use_sphere:
@@ -50,8 +49,8 @@ class PyBulletEnv(gym.Env):
         model_utils.reset_model_position(self.model, self.pose_file)
         
         self.container.initialize()
-        self.muscles.print_system() 
-        print("num states", self.muscles.muscle_sys.num_states)
+        #self.muscles.print_system() 
+        #print("num states", self.muscles.muscle_sys.num_states)
         self.muscles.setup_integrator()
 
         #####META PARAMETERS FOR SIMULATION#####
@@ -65,9 +64,9 @@ class PyBulletEnv(gym.Env):
 
         #####TARGET POSITION USING POINT IN SPACE: X, Y, Z#####
         ###x, y, z for initializing from hand starting position, target_pos for updating
-        self.x_pos = p.getLinkState(self.model, 112)[0][0]
-        self.y_pos = p.getLinkState(self.model, 112)[0][1]
-        self.z_pos = p.getLinkState(self.model, 112)[0][2]
+        self.x_pos = p.getLinkState(self.model, 115)[0][0]
+        self.y_pos = p.getLinkState(self.model, 115)[0][1]
+        self.z_pos = p.getLinkState(self.model, 115)[0][2]
 
         self.radius = .006
         self.theta = np.linspace(7*np.pi/6, -5*np.pi/6, self.timestep) #array from 0-2pi of timestep values
@@ -95,6 +94,8 @@ class PyBulletEnv(gym.Env):
     def reset(self, pose_file):
         self.istep = 0
         #carpus starting position, from getLinkState of metacarpus1
+        model_utils.disable_control(self.model)
+        #p.resetBasePositionAndOrientation(self.model, self.model_offset, p.getQuaternionFromEuler([0, 0, 80.2]))
         self.reset_model(pose_file)
         self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
         if self.use_sphere:
@@ -104,7 +105,7 @@ class PyBulletEnv(gym.Env):
     def do_simulation(self, n_frames, forcesArray):
         for _ in range(n_frames):
             p.setJointMotorControlArray(self.model, self.ctrl, p.TORQUE_CONTROL, forces = forcesArray)
-            p.resetBasePositionAndOrientation(self.model, self.model_offset, p.getQuaternionFromEuler([0, 0, 80.2]))
+            #p.resetBasePositionAndOrientation(self.model, self.model_offset, p.getQuaternionFromEuler([0, 0, 80.2]))
 
     #####DISCONNECTS SERVER#####
     def close(self):
@@ -174,7 +175,7 @@ class Mouse_Env(PyBulletEnv):
         return cost
 
     def get_reward(self): 
-        hand_pos = p.getLinkState(self.model, 112)[0] #(x, y, z)
+        hand_pos = p.getLinkState(self.model, 115)[0] #(x, y, z)
 
         d_x = np.abs(hand_pos[0] - self.target_pos[0])
         d_y = np.abs(hand_pos[1] - self.target_pos[1])
@@ -195,7 +196,7 @@ class Mouse_Env(PyBulletEnv):
         return reward, distances
 
     def is_done(self):
-        hand_pos =  np.array(p.getLinkState(self.model, 112)[0]) #(x, y, z)
+        hand_pos =  np.array(p.getLinkState(self.model, 115)[0]) #(x, y, z)
         criteria = hand_pos - self.target_pos
 
         if self.istep < self.timestep_limit:

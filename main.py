@@ -22,15 +22,15 @@ model_offset = (0.0, 0.0, .0475) #z position modified with global scaling
 ctrl = [104, 105, 106, 107, 108, 110, 111]
 
 ###JOINT TO INDEX###
-#RShoulder_rotation - 104
-#RShoulder_adduction - 105
-#RShoulder_flexion - 106
-#RElbow_flexion - 107
-#RElbow_supination - 108
-#RWrist_adduction - 110
-#RWrist_flexion - 111
-#RMetacarpus1_flextion - 112, use link (carpus) for pos
-#Lumbar2_bending - 12, use link(lumbar 1) for stability reward
+#RShoulder_rotation - 107
+#RShoulder_adduction - 108
+#RShoulder_flexion - 109
+#RElbow_flexion - 110
+#RElbow_supination - 111
+#RWrist_adduction - 113
+#RWrist_flexion - 114
+#RMetacarpus1_flexion - 115, use link (carpus) for pos
+#Lumbar2_bending - 15, use link(lumbar 1) for stability reward
 
 if __name__ == "__main__":
 
