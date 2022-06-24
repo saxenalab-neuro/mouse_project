@@ -22,7 +22,7 @@ class PyBulletEnv(gym.Env):
     def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset):
         #####BUILDS SERVER AND LOADS MODEL#####
         #self.client = p.connect(p.GUI)
-        self.client = p.connect(p.DIRECT)
+        self.client = p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0,0,-9.81) #normal gravity
         self.plane = p.loadURDF("plane.urdf") #sets floor
@@ -38,7 +38,7 @@ class PyBulletEnv(gym.Env):
         self.pose_file = pose_file
         
         #####MUSCLES + DATA LOGGING#####
-        self.container = Container(max_iterations=int(2.5/0.001))
+        self.container = Container(max_iterations=int(2.5/0.00001))
 
         # Physics simulation to namespace
         self.sim_data = self.container.add_namespace('physics')
@@ -55,10 +55,10 @@ class PyBulletEnv(gym.Env):
 
         #####META PARAMETERS FOR SIMULATION#####
         self.n_fixedsteps= 5
-        self.timestep_limit = 35
+        self.timestep_limit = timestep
         # self._max_episode_steps= self.timestep_limit/ 2
         self._max_episode_steps = timestep #Does not matter. It is being set in the main.py where the total number of steps are being changed.
-        self.threshold_user= 0.0095
+        self.threshold_user= 0.01
         self.timestep = timestep
         self.frame_skip= frame_skip
 
@@ -77,7 +77,7 @@ class PyBulletEnv(gym.Env):
 
         p.resetDebugVisualizerCamera(0.3, 15, -10, [0, 0.21, 0])
 
-        self.action_space = spaces.Box(low=np.array([-.05,-.05,-.05,-.05,-.05,-.05,-.05]), high=np.array([.05,.05,.05,.05,.05,.05,.05]), dtype=np.float32)
+        self.action_space = spaces.Box(low=np.ones(18), high=np.ones(18), dtype=np.float32)
         self.seed()
 
     def seed(self, seed = None):
@@ -94,8 +94,6 @@ class PyBulletEnv(gym.Env):
     def reset(self, pose_file):
         self.istep = 0
         #carpus starting position, from getLinkState of metacarpus1
-        model_utils.disable_control(self.model)
-        #p.resetBasePositionAndOrientation(self.model, self.model_offset, p.getQuaternionFromEuler([0, 0, 80.2]))
         self.reset_model(pose_file)
         self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
         if self.use_sphere:
@@ -105,7 +103,6 @@ class PyBulletEnv(gym.Env):
     def do_simulation(self, n_frames, forcesArray):
         for _ in range(n_frames):
             p.setJointMotorControlArray(self.model, self.ctrl, p.TORQUE_CONTROL, forces=forcesArray)
-            #p.resetBasePositionAndOrientation(self.model, self.model_offset, p.getQuaternionFromEuler([0, 0, 80.2]))
 
     #####DISCONNECTS SERVER#####
     def close(self):
@@ -237,18 +234,23 @@ class Mouse_Env(PyBulletEnv):
 
     def step(self, forces):
 
+        # TODO
+        # Make sure activations are correct and figure out importance of containers 
+        # (seems to make different actions when doing container.update_log() but not sure why).
+        # change the state for muscle activations instead of joints
+
         self.istep += 1
 
         #can edit threshold with episodes
         if self.istep > self.n_fixedsteps:
-            self.threshold = 0.0085
+            self.threshold = 0.008
 
-        self.do_simulation(self.frame_skip, forces)
-        self.muscles.step()
+        #self.do_simulation(self.frame_skip, forces)
+        self.muscles.step(forces, self.istep)
         
         reward, distances = self.get_reward()
         cost = self.get_cost(forces)
-        final_reward= (3*reward) - (1.5*cost)
+        final_reward= (5*reward) - (.5*cost)
 
         done = self.is_done()
         
@@ -263,9 +265,11 @@ class Mouse_Env(PyBulletEnv):
         p.stepSimulation()
 
         #self.update_logs(joint_positions, joint_velocities, target_vel, distances)
-        #self.container.update_log()
+        # Actually might be important for some reason
+        if done:
+            self.container.initialize()
+
+        self.container.update_log()
         state = self.update_state(joint_positions, joint_velocities, target_vel, distances)
 
         return state, final_reward, done
-#to_do:
-# things to hold model down

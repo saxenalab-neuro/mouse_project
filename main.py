@@ -45,7 +45,7 @@ if __name__ == "__main__":
                         help='discount factor for reward (default: 0.99)')
     parser.add_argument('--tau', type=float, default=0.005, metavar='G',
                         help='target smoothing coefficient(τ) (default: 0.005)')
-    parser.add_argument('--lr', type=float, default=0.0003, metavar='G',
+    parser.add_argument('--lr', type=float, default=0.001, metavar='G',
                         help='learning rate (default: 0.001)')
     parser.add_argument('--alpha', type=float, default=0.2, metavar='G',
                         help='Temperature parameter α determines the relative importance of the entropy\
@@ -60,7 +60,7 @@ if __name__ == "__main__":
                         help='batch size (default: 6)')
     parser.add_argument('--num_steps', type=int, default=1000001, metavar='N',
                         help='maximum number of steps (default: 1000000)')
-    parser.add_argument('--hidden_size', type=int, default=256, metavar='N',
+    parser.add_argument('--hidden_size', type=int, default=512, metavar='N',
                         help='hidden size (default: 1000)')
     parser.add_argument('--updates_per_step', type=int, default=1, metavar='N',
                         help='model updates per simulator step (default: 1)')
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     ###PARAMETERS###
     frame_skip = 1
     n_frames = 1
-    timestep = 35
+    timestep = 75
     mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset)
     # hard code num_inputs, 
     agent = SAC(23, mouseEnv.action_space, args)
@@ -112,7 +112,6 @@ if __name__ == "__main__":
         action_list= []
         done = False
 
-        #model_utils.disable_control(mouseEnv.model)
         mouseEnv.reset(pose_file)
         state = mouseEnv.get_cur_state()
 
@@ -149,6 +148,7 @@ if __name__ == "__main__":
                     # writer.add_scalar('entropy_temprature/alpha', alpha, updates)
                     updates += 1
 
+            #action = np.random.uniform(0, 1, 18)
             next_state, reward, done = mouseEnv.step(action)
 
             episode_reward += reward
