@@ -8,12 +8,11 @@
 #SBATCH --time=96:00:00
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:geforce:1
-#SBATCH --output=RSAC.out
+#SBATCH --output=RSAC_muscle.out
 pwd; hostname; date
 
-export PATH=/blue/shreya.saxena/share/mujoco/bin:$PATH
-export LD_LIBRARY_PATH=/usr/lib64:/home/malmani/.mujoco/mujoco200/bin
+export PATH=/home/lazzarijohn/.conda/envs/mouse/bin:$PATH
 
-python /home/malmani/blue_dir/malmani/Monkey_Speed_10/Monkey_RSAC_1300/RSAC5/SAC/main.py --cuda
+python /home/lazzarijohn/mouse_project/main.py --cuda
 
 date
