@@ -60,7 +60,7 @@ if __name__ == "__main__":
                         help='batch size (default: 6)')
     parser.add_argument('--num_steps', type=int, default=1000001, metavar='N',
                         help='maximum number of steps (default: 1000000)')
-    parser.add_argument('--hidden_size', type=int, default=512, metavar='N',
+    parser.add_argument('--hidden_size', type=int, default=350, metavar='N',
                         help='hidden size (default: 1000)')
     parser.add_argument('--updates_per_step', type=int, default=1, metavar='N',
                         help='model updates per simulator step (default: 1)')
@@ -79,10 +79,10 @@ if __name__ == "__main__":
     ###PARAMETERS###
     frame_skip = 1
     n_frames = 1
-    timestep = 75
+    timestep = 100
     mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset)
     # hard code num_inputs, 
-    agent = SAC(23, mouseEnv.action_space, args)
+    agent = SAC(41, mouseEnv.action_space, args)
     policy_memory= PolicyReplayMemory(args.policy_replay_size, args.seed)
 
     #STABILITY ENV
@@ -112,6 +112,7 @@ if __name__ == "__main__":
         action_list= []
         done = False
 
+        #disable_control(mouseEnv.model)
         mouseEnv.reset(pose_file)
         state = mouseEnv.get_cur_state()
 
@@ -179,7 +180,6 @@ if __name__ == "__main__":
 
         if total_numsteps > args.num_steps:
             break
-
 
     reward_tracker = np.array(reward_tracker)
     policy_loss_tracker = np.array(policy_loss_tracker)
