@@ -5,8 +5,8 @@ import torch
 import argparse
 from sac import SAC
 import itertools
-import matplotlib.pyplot as plt
 from model_utils import disable_control
+import farms_pylog as pylog
 
 import model_utils
 from Mouse_RL_Environment import Mouse_Env
@@ -60,7 +60,7 @@ if __name__ == "__main__":
                         help='batch size (default: 6)')
     parser.add_argument('--num_steps', type=int, default=1000001, metavar='N',
                         help='maximum number of steps (default: 1000000)')
-    parser.add_argument('--hidden_size', type=int, default=350, metavar='N',
+    parser.add_argument('--hidden_size', type=int, default=256, metavar='N',
                         help='hidden size (default: 1000)')
     parser.add_argument('--updates_per_step', type=int, default=1, metavar='N',
                         help='model updates per simulator step (default: 1)')
@@ -79,14 +79,12 @@ if __name__ == "__main__":
     ###PARAMETERS###
     frame_skip = 1
     n_frames = 1
-    timestep = 100
+    timestep = 75
     mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset)
     # hard code num_inputs, 
     agent = SAC(41, mouseEnv.action_space, args)
     policy_memory= PolicyReplayMemory(args.policy_replay_size, args.seed)
 
-    #STABILITY ENV
-    #mouseEnv = Mouse_Stability_Env(file_path, muscle_config_file, frame_skip, ctrl, timestep)
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
 
@@ -104,6 +102,8 @@ if __name__ == "__main__":
 
     reward_tracker = []
     policy_loss_tracker = []
+
+    highest_reward = 0
 
     for i_episode in itertools.count(1):
 
@@ -149,7 +149,7 @@ if __name__ == "__main__":
                     # writer.add_scalar('entropy_temprature/alpha', alpha, updates)
                     updates += 1
 
-            #action = np.random.uniform(0, 1, 18)
+            #action = np.random.uniform(0, .5, 18)
             next_state, reward, done = mouseEnv.step(action)
 
             episode_reward += reward
@@ -172,8 +172,12 @@ if __name__ == "__main__":
 
             if done:
                 break
-        
-        print('reward: {}'.format(episode_reward))
+            
+        if episode_reward > highest_reward:
+             highest_reward = episode_reward 
+
+        pylog.debug('reward at total timestep {}: {}'.format(total_numsteps, episode_reward))
+        pylog.debug('highest reward so far: {}'.format(highest_reward))
         reward_tracker.append(episode_reward)
         
         policy_memory.push(ep_trajectory)

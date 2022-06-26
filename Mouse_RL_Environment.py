@@ -84,7 +84,7 @@ class PyBulletEnv(gym.Env):
         #self.muscles.setup_integrator()
 
         #####META PARAMETERS FOR SIMULATION#####
-        self.n_fixedsteps= 10
+        self.n_fixedsteps= 15
         self.timestep_limit = timestep
         # self._max_episode_steps= self.timestep_limit/ 2
         self._max_episode_steps = timestep #Does not matter. It is being set in the main.py where the total number of steps are being changed.
@@ -144,6 +144,9 @@ class PyBulletEnv(gym.Env):
 
     def reset(self, pose_file):
         self.istep = 0
+        self.container.initialize()
+        self.muscles.setup_integrator()
+        self.container.update_log()
         #carpus starting position, from getLinkState of metacarpus1
         self.reset_model(pose_file)
         self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
@@ -314,7 +317,7 @@ class Mouse_Env(PyBulletEnv):
 
         joint_positions, _ = self.get_joint_positions_and_velocities()
         _, distance = self.get_reward()
-        return [*list(np.zeros(18)), *list(joint_positions), *[0., 0., 0., 0., 0., 0., 0.], *list(self.target_pos), *[0, 0, 0], *distance]
+        return [*list(self.get_activations()), *list(joint_positions), *[0., 0., 0., 0., 0., 0., 0.], *list(self.target_pos), *[0, 0, 0], *distance]
     
     def controller_to_actuator(self, forces):
         self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_AN", forces[0])
@@ -335,6 +338,30 @@ class Mouse_Env(PyBulletEnv):
         self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_TBL", forces[15])
         self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_TBM", forces[16])
         self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_TBO", forces[17])
+
+    def get_stim(self):
+        stim = []
+
+        stim.append(self.container.muscles.activations.get_parameter_value('stim_RIGHT_FORE_AN'))
+        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_BBL"))
+        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_BBS"))
+        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_BRA"))
+        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_COR"))
+        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_ECRB"))
+        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_ECRL"))
+        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_ECU"))
+        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_EIP1"))
+        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_EIP2"))
+        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_FCR"))
+        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_FCU"))
+        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_PLO"))
+        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_PQU"))
+        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_PTE"))
+        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_TBL"))
+        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_TBM"))
+        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_TBO"))
+
+        return stim
 
     def get_activations(self):
         activations = []
@@ -363,25 +390,22 @@ class Mouse_Env(PyBulletEnv):
     def step(self, forces):
 
         # TODO
-        # Make sure activations are correct and figure out importance of containers 
-        # (seems to make different actions when doing container.update_log() but not sure why).
-        # just changed containers to update logs and reset after each episode, seems to work much much better
-        # change the state for muscle activations instead of joints
+        # I have no clue if this is right, but it is doing something, if it learns thats good enough
 
         self.istep += 1
 
-        if self.istep == 1:
-            #self.container.initialize()
-            self.muscles.setup_integrator()
-
         self.controller_to_actuator(forces)
+
         #can edit threshold with episodes
         if self.istep > self.n_fixedsteps:
-            self.threshold = 0.008
+            self.threshold = 0.009
 
-        #self.do_simulation(self.frame_skip, forces)
         self.muscles.step(forces, self.istep)
         act = self.get_activations()
+        #print('current stim (from ones passed in): {}'.format(self.get_stim()))
+        #print("activations: {}".format(act))
+        #print("forces passed in: {}".format(forces))
+
         #self.update_logs()
         self.container.update_log()
         
