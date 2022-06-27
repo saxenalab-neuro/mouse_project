@@ -22,7 +22,7 @@ class PyBulletEnv(gym.Env):
     def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset):
         #####BUILDS SERVER AND LOADS MODEL#####
         #self.client = p.connect(p.GUI)
-        self.client = p.connect(p.DIRECT)
+        self.client = p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0,0,-9.81) #normal gravity
         self.plane = p.loadURDF("plane.urdf") #sets floor
@@ -34,6 +34,7 @@ class PyBulletEnv(gym.Env):
         self.joint_id = {}
         self.link_id = {}
         self.joint_type = {}
+        self.istep = 0
 
         if self.use_sphere:
             self.sphere = p.loadURDF("sphere_small.urdf", globalScaling=.1) #visualizes target position
@@ -73,7 +74,6 @@ class PyBulletEnv(gym.Env):
 
         #: ADD joint paramters
         for name, _ in self.joint_id.items():
-            print(name)
             self.sim_data.joint_positions.add_parameter(name)
             self.sim_data.joint_velocity.add_parameter(name)
             self.sim_data.joint_torques.add_parameter(name)
@@ -81,14 +81,14 @@ class PyBulletEnv(gym.Env):
         self.initialize_muscles()
         model_utils.reset_model_position(self.model, self.pose_file)
         self.container.initialize()
-        #self.muscles.setup_integrator()
+        self.muscles.setup_integrator()
 
         #####META PARAMETERS FOR SIMULATION#####
         self.n_fixedsteps= 15
         self.timestep_limit = timestep
         # self._max_episode_steps= self.timestep_limit/ 2
         self._max_episode_steps = timestep #Does not matter. It is being set in the main.py where the total number of steps are being changed.
-        self.threshold_user= 0.01
+        self.threshold_user = 0.01
         self.timestep = timestep
         self.frame_skip= frame_skip
 
@@ -143,12 +143,26 @@ class PyBulletEnv(gym.Env):
         raise NotImplementedError
 
     def reset(self, pose_file):
+
+        # TODO
+        # check these, make sure reset properly, find out why update log makes a difference, make sure they all start with the same values
+        # check if constantly doing setup_integrator is necessary (probably not)
+        # it seems there are two muscles where a force is never applied, and there is one less without update log
+
         self.istep = 0
-        self.container.initialize()
-        self.muscles.setup_integrator()
-        self.container.update_log()
         #carpus starting position, from getLinkState of metacarpus1
         self.reset_model(pose_file)
+        self.container.muscles.activations.initialize_table()
+        self.container.muscles.states.initialize_table()
+        self.container.muscles.parameters.initialize_table()
+        self.container.muscles.dstates.initialize_table()
+        self.container.muscles.outputs.initialize_table()
+        self.container.muscles.forces.initialize_table()
+        self.container.muscles.II.initialize_table()
+        self.container.muscles.Ia.initialize_table()
+        self.container.muscles.Ib.initialize_table()
+        self.muscles.setup_integrator()
+
         self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
         if self.use_sphere:
             p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
@@ -162,35 +176,6 @@ class PyBulletEnv(gym.Env):
     def close(self):
         p.disconnect(self.client)
 
-    def create_tables(self):
-
-        ###ADD PARAMETERS TO TABLES###
-        self.sim_data.joint_positions.add_parameter('RShoulder_rotation')
-        self.sim_data.joint_positions.add_parameter('RShoulder_adduction')
-        self.sim_data.joint_positions.add_parameter('RShoulder_flexion')
-        self.sim_data.joint_positions.add_parameter('RElbow_flexion')
-        self.sim_data.joint_positions.add_parameter('RElbow_supination')
-        self.sim_data.joint_positions.add_parameter('RWrist_adduction')
-        self.sim_data.joint_positions.add_parameter('RWrist_flexion')
-
-        self.sim_data.joint_velocity.add_parameter('RShoulder_rotation')
-        self.sim_data.joint_velocity.add_parameter('RShoulder_adduction')
-        self.sim_data.joint_velocity.add_parameter('RShoulder_flexion')
-        self.sim_data.joint_velocity.add_parameter('RElbow_flexion')
-        self.sim_data.joint_velocity.add_parameter('RElbow_supination')
-        self.sim_data.joint_velocity.add_parameter('RWrist_adduction')
-        self.sim_data.joint_velocity.add_parameter('Rwrist_flexion')
-
-        self.sim_data.target_positions.add_parameter('x')
-        self.sim_data.target_positions.add_parameter('y')
-        self.sim_data.target_positions.add_parameter('z')
-
-        self.sim_data.target_velocity.add_parameter('Carpus_velocity')
-
-        self.sim_data.distances.add_parameter('x')
-        self.sim_data.distances.add_parameter('y')
-        self.sim_data.distances.add_parameter('z')
-    
     @property
     def base_position(self):
         """ Get the position of the animal  """
@@ -237,6 +222,30 @@ class PyBulletEnv(gym.Env):
         self.sim_data.joint_velocity.values = np.asarray(self.joint_velocities)
         self.sim_data.joint_torques.values = np.asarray(self.joint_torques)
         self.sim_data.base_position.values = np.asarray(self.base_position)
+    
+    def get_lce(self):
+        stim = []
+
+        stim.append(self.container.muscles.forces.get_parameter_value('tendon_force_RIGHT_FORE_AN'))
+        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_BBL"))
+        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_BBS"))
+        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_BRA"))
+        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_COR"))
+        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_ECRB"))
+        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_ECRL"))
+        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_ECU"))
+        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_EIP1"))
+        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_EIP2"))
+        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_FCR"))
+        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_FCU"))
+        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_PLO"))
+        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_PQU"))
+        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_PTE"))
+        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_TBL"))
+        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_TBM"))
+        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_TBO"))
+
+        return stim
 
 class Mouse_Env(PyBulletEnv):
 
@@ -317,9 +326,11 @@ class Mouse_Env(PyBulletEnv):
 
         joint_positions, _ = self.get_joint_positions_and_velocities()
         _, distance = self.get_reward()
+        #print(self.get_stim())
         return [*list(self.get_activations()), *list(joint_positions), *[0., 0., 0., 0., 0., 0., 0.], *list(self.target_pos), *[0, 0, 0], *distance]
     
     def controller_to_actuator(self, forces):
+
         self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_AN", forces[0])
         self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_BBL", forces[1])
         self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_BBS", forces[2])
@@ -400,14 +411,14 @@ class Mouse_Env(PyBulletEnv):
         if self.istep > self.n_fixedsteps:
             self.threshold = 0.009
 
-        self.muscles.step(forces, self.istep)
-        act = self.get_activations()
+        self.muscles.step(self.istep)
         #print('current stim (from ones passed in): {}'.format(self.get_stim()))
         #print("activations: {}".format(act))
         #print("forces passed in: {}".format(forces))
 
         #self.update_logs()
         self.container.update_log()
+        act = self.get_activations()
         
         reward, distances = self.get_reward()
         cost = self.get_cost(forces)
