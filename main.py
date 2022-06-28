@@ -19,7 +19,8 @@ muscle_config_file = "./files/right_forelimb.yaml"
 model_offset = (0.0, 0.0, .0475) #z position modified with global scaling
 
 #ARM CONTROL
-ctrl = [104, 105, 106, 107, 108, 110, 111]
+#ctrl = [107, 108, 109, 110, 111, 113, 114]
+ctrl = [3, 4, 5, 6, 7, 10, 11]
 
 ###JOINT TO INDEX###
 #RShoulder_rotation - 107
@@ -79,7 +80,7 @@ if __name__ == "__main__":
     ###PARAMETERS###
     frame_skip = 1
     n_frames = 1
-    timestep = 75
+    timestep = 1000
     mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset)
     # hard code num_inputs, 
     agent = SAC(41, mouseEnv.action_space, args)
@@ -88,6 +89,7 @@ if __name__ == "__main__":
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
 
+    print(model_utils.generate_joint_id_to_name_dict(mouseEnv.model))
     model_utils.disable_control(mouseEnv.model)
     p.setTimeStep(.001)
 
@@ -112,7 +114,7 @@ if __name__ == "__main__":
         action_list= []
         done = False
 
-        #disable_control(mouseEnv.model)
+        disable_control(mouseEnv.model)
         mouseEnv.reset(pose_file)
         state = mouseEnv.get_cur_state()
 
@@ -149,7 +151,6 @@ if __name__ == "__main__":
                     # writer.add_scalar('entropy_temprature/alpha', alpha, updates)
                     updates += 1
 
-            #action = np.random.uniform(0, .5, 18)
             next_state, reward, done = mouseEnv.step(action)
 
             episode_reward += reward
@@ -172,7 +173,7 @@ if __name__ == "__main__":
 
             if done:
                 break
-            
+
         if episode_reward > highest_reward:
              highest_reward = episode_reward 
 

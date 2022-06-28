@@ -21,7 +21,6 @@ sphere_file = "../files/sphere_small.urdf"
 class PyBulletEnv(gym.Env):
     def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset):
         #####BUILDS SERVER AND LOADS MODEL#####
-        #self.client = p.connect(p.GUI)
         self.client = p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0,0,-9.81) #normal gravity
@@ -49,10 +48,12 @@ class PyBulletEnv(gym.Env):
         self.sim_data = self.container.add_namespace('physics')
 
         ####ADD TABLES TO CONTAINER###
+        '''
         self.sim_data.add_table('joint_positions')
         self.sim_data.add_table('joint_velocity')
         self.sim_data.add_table('joint_torques')
         self.sim_data.add_table('base_position')
+
 
         #: Generate joint_name to id dict
         self.link_id[p.getBodyInfo(self.model)[0].decode('UTF-8')] = -1
@@ -77,11 +78,12 @@ class PyBulletEnv(gym.Env):
             self.sim_data.joint_positions.add_parameter(name)
             self.sim_data.joint_velocity.add_parameter(name)
             self.sim_data.joint_torques.add_parameter(name)
+        '''
 
         self.initialize_muscles()
         model_utils.reset_model_position(self.model, self.pose_file)
         self.container.initialize()
-        self.muscles.setup_integrator()
+        #self.muscles.setup_integrator()
 
         #####META PARAMETERS FOR SIMULATION#####
         self.n_fixedsteps= 15
@@ -144,33 +146,16 @@ class PyBulletEnv(gym.Env):
 
     def reset(self, pose_file):
 
-        # TODO
-        # check these, make sure reset properly, find out why update log makes a difference, make sure they all start with the same values
-        # check if constantly doing setup_integrator is necessary (probably not)
-        # it seems there are two muscles where a force is never applied, and there is one less without update log
-
         self.istep = 0
         #carpus starting position, from getLinkState of metacarpus1
         self.reset_model(pose_file)
-        self.container.muscles.activations.initialize_table()
-        self.container.muscles.states.initialize_table()
-        self.container.muscles.parameters.initialize_table()
-        self.container.muscles.dstates.initialize_table()
-        self.container.muscles.outputs.initialize_table()
-        self.container.muscles.forces.initialize_table()
-        self.container.muscles.II.initialize_table()
-        self.container.muscles.Ia.initialize_table()
-        self.container.muscles.Ib.initialize_table()
+        self.container.initialize()
         self.muscles.setup_integrator()
 
         self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
         if self.use_sphere:
             p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
-        self.threshold = self.threshold_user 
-
-    def do_simulation(self, n_frames, forcesArray):
-        for _ in range(n_frames):
-            p.setJointMotorControlArray(self.model, self.ctrl, p.TORQUE_CONTROL, forces=forcesArray)
+        self.threshold = self.threshold_user
 
     #####DISCONNECTS SERVER#####
     def close(self):
@@ -332,7 +317,7 @@ class Mouse_Env(PyBulletEnv):
     def controller_to_actuator(self, forces):
 
         self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_AN", forces[0])
-        self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_BBL", forces[1])
+        self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_BBL",forces[1])
         self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_BBS", forces[2])
         self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_BRA", forces[3])
         self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_COR", forces[4])
@@ -341,8 +326,8 @@ class Mouse_Env(PyBulletEnv):
         self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_ECU", forces[7])
         self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_EIP1", forces[8])
         self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_EIP2", forces[9])
-        self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_FCR", forces[11])
-        self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_FCU", forces[10])
+        self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_FCR", forces[10])
+        self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_FCU", forces[11])
         self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_PLO", forces[12])
         self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_PQU", forces[13])
         self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_PTE", forces[14])
@@ -411,15 +396,16 @@ class Mouse_Env(PyBulletEnv):
         if self.istep > self.n_fixedsteps:
             self.threshold = 0.009
 
-        self.muscles.step(self.istep)
+        self.muscles.step()
         #print('current stim (from ones passed in): {}'.format(self.get_stim()))
         #print("activations: {}".format(act))
         #print("forces passed in: {}".format(forces))
 
         #self.update_logs()
         self.container.update_log()
+        p.stepSimulation()
+
         act = self.get_activations()
-        
         reward, distances = self.get_reward()
         cost = self.get_cost(forces)
         final_reward= (5*reward) - (.5*cost)
@@ -434,9 +420,6 @@ class Mouse_Env(PyBulletEnv):
 
         joint_positions, joint_velocities = self.get_joint_positions_and_velocities()
 
-        p.stepSimulation()
-
-        # Actually might be important for some reason
         state = self.update_state(act, joint_positions, joint_velocities, target_vel, distances)
 
         return state, final_reward, done
