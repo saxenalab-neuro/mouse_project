@@ -47,39 +47,6 @@ class PyBulletEnv(gym.Env):
         # Physics simulation to namespace
         self.sim_data = self.container.add_namespace('physics')
 
-        ####ADD TABLES TO CONTAINER###
-        '''
-        self.sim_data.add_table('joint_positions')
-        self.sim_data.add_table('joint_velocity')
-        self.sim_data.add_table('joint_torques')
-        self.sim_data.add_table('base_position')
-
-
-        #: Generate joint_name to id dict
-        self.link_id[p.getBodyInfo(self.model)[0].decode('UTF-8')] = -1
-        for n in range(228):
-            info = p.getJointInfo(self.model, n)
-            _id = info[0]
-            joint_name = info[1].decode('UTF-8')
-            link_name = info[12].decode('UTF-8')
-            _type = info[2]
-            self.joint_id[joint_name] = _id
-            self.joint_type[joint_name] = _type
-            self.link_id[link_name] = _id
-            pylog.debug("Link name {} id {}".format(link_name, _id))
-
-        #: ADD base position parameters
-        self.sim_data.base_position.add_parameter('x')
-        self.sim_data.base_position.add_parameter('y')
-        self.sim_data.base_position.add_parameter('z')
-
-        #: ADD joint paramters
-        for name, _ in self.joint_id.items():
-            self.sim_data.joint_positions.add_parameter(name)
-            self.sim_data.joint_velocity.add_parameter(name)
-            self.sim_data.joint_torques.add_parameter(name)
-        '''
-
         self.initialize_muscles()
         model_utils.reset_model_position(self.model, self.pose_file)
         self.container.initialize()
@@ -111,26 +78,6 @@ class PyBulletEnv(gym.Env):
 
         self.action_space = spaces.Box(low=np.ones(18), high=np.ones(18), dtype=np.float32)
 
-        p.setJointMotorControlArray(
-            self.model,
-            self.ctrl,
-            p.VELOCITY_CONTROL,
-            targetVelocities=np.zeros(7),
-            forces=np.zeros(7)
-        )
-        p.setJointMotorControlArray(
-            self.model,
-            self.ctrl,
-            p.POSITION_CONTROL,
-            forces=np.zeros(7)
-        )
-        p.setJointMotorControlArray(
-            self.model,
-            self.ctrl,
-            p.TORQUE_CONTROL,
-            forces=np.zeros(7)
-        )
-
         self.seed()
 
     def seed(self, seed = None):
@@ -145,68 +92,25 @@ class PyBulletEnv(gym.Env):
         raise NotImplementedError
 
     def reset(self, pose_file):
-
         self.istep = 0
-        #carpus starting position, from getLinkState of metacarpus1
-        self.reset_model(pose_file)
-        self.container.initialize()
-        self.muscles.setup_integrator()
-
+        model_utils.disable_control(self.model) #disables torque/position
+        self.reset_model(pose_file) #resets model position
+        self.container.initialize() #resets container
+        self.muscles.setup_integrator() #resets muscles
+        #resets target position
         self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
         if self.use_sphere:
             p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
-        self.threshold = self.threshold_user
-
-    #####DISCONNECTS SERVER#####
-    def close(self):
-        p.disconnect(self.client)
-
-    @property
-    def base_position(self):
-        """ Get the position of the animal  """
-        return (p.getBasePositionAndOrientation(self.model))[0]
-
-    @property
-    def joint_positions(self):
-        """ Get the joint positions in the animal  """
-        return tuple(
-            state[0] for state in p.getJointStates(
-                self.model,
-                np.arange(0, p.getNumJoints(self.model))
-            )
-        )
-
-    @property
-    def joint_torques(self):
-        """ Get the joint torques in the animal  """
-        return tuple(
-            state[-1] for state in p.getJointStates(
-                self.model,
-                np.arange(0, p.getNumJoints(self.model))
-            )
-        )
-
-    @property
-    def joint_velocities(self):
-        """ Get the joint velocities in the animal  """
-        return tuple(
-            state[1] for state in p.getJointStates(
-                self.model,
-                np.arange(0, p.getNumJoints(self.model))
-            )
-        )
+        
+        self.threshold = self.threshold_user #resets threshold
     
     def initialize_muscles(self):
-        self.muscles = MusculoSkeletalSystem(
-            self.container, 1e-3, self.muscle_config_file
-        )
-   
-    def update_logs(self):
+        self.muscles = MusculoSkeletalSystem(self.container, 1e-3, self.muscle_config_file)
 
-        self.sim_data.joint_positions.values = np.asarray(self.joint_positions)
-        self.sim_data.joint_velocity.values = np.asarray(self.joint_velocities)
-        self.sim_data.joint_torques.values = np.asarray(self.joint_torques)
-        self.sim_data.base_position.values = np.asarray(self.base_position)
+    def do_simulation(self):
+        self.muscles.step()
+        self.container.update_log()
+        p.stepSimulation()
     
     def get_lce(self):
         stim = []
@@ -231,6 +135,10 @@ class PyBulletEnv(gym.Env):
         stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_TBO"))
 
         return stim
+
+    #####DISCONNECTS SERVER#####
+    def close(self):
+        p.disconnect(self.client)
 
 class Mouse_Env(PyBulletEnv):
 
@@ -286,14 +194,13 @@ class Mouse_Env(PyBulletEnv):
             return True
 
     def update_target_pos(self):
-
         self.x_pos = self.radius * np.cos(self.theta[self.istep - 1]) + self.center[0]
         self.z_pos = self.radius * np.sin(self.theta[self.istep - 1]) + self.center[2]
         self.target_pos = [self.x_pos, self.y_pos, self.z_pos]
 
         if self.use_sphere:
             p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
-        #print("x, y, z", self.target_pos)
+        
 
     def get_joint_positions_and_velocities(self):
         joint_positions = []
@@ -335,30 +242,6 @@ class Mouse_Env(PyBulletEnv):
         self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_TBM", forces[16])
         self.container.muscles.activations.set_parameter_value("stim_RIGHT_FORE_TBO", forces[17])
 
-    def get_stim(self):
-        stim = []
-
-        stim.append(self.container.muscles.activations.get_parameter_value('stim_RIGHT_FORE_AN'))
-        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_BBL"))
-        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_BBS"))
-        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_BRA"))
-        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_COR"))
-        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_ECRB"))
-        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_ECRL"))
-        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_ECU"))
-        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_EIP1"))
-        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_EIP2"))
-        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_FCR"))
-        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_FCU"))
-        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_PLO"))
-        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_PQU"))
-        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_PTE"))
-        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_TBL"))
-        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_TBM"))
-        stim.append(self.container.muscles.activations.get_parameter_value("stim_RIGHT_FORE_TBO"))
-
-        return stim
-
     def get_activations(self):
         activations = []
 
@@ -384,10 +267,6 @@ class Mouse_Env(PyBulletEnv):
         return activations
 
     def step(self, forces):
-
-        # TODO
-        # I have no clue if this is right, but it is doing something, if it learns thats good enough
-
         self.istep += 1
 
         self.controller_to_actuator(forces)
@@ -396,14 +275,8 @@ class Mouse_Env(PyBulletEnv):
         if self.istep > self.n_fixedsteps:
             self.threshold = 0.009
 
-        self.muscles.step()
-        #print('current stim (from ones passed in): {}'.format(self.get_stim()))
         #print("activations: {}".format(act))
         #print("forces passed in: {}".format(forces))
-
-        #self.update_logs()
-        self.container.update_log()
-        p.stepSimulation()
 
         act = self.get_activations()
         reward, distances = self.get_reward()
