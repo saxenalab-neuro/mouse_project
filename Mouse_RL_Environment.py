@@ -53,11 +53,11 @@ class PyBulletEnv(gym.Env):
         #self.muscles.setup_integrator()
 
         #####META PARAMETERS FOR SIMULATION#####
-        self.n_fixedsteps= 15
+        self.n_fixedsteps= 10
         self.timestep_limit = timestep
         # self._max_episode_steps= self.timestep_limit/ 2
         self._max_episode_steps = timestep #Does not matter. It is being set in the main.py where the total number of steps are being changed.
-        self.threshold_user = 0.01
+        self.threshold_user = 0.009
         self.timestep = timestep
         self.frame_skip= frame_skip
 
@@ -68,8 +68,8 @@ class PyBulletEnv(gym.Env):
         self.z_pos = p.getLinkState(self.model, 115)[0][2]
 
         self.radius = .006
-        self.theta = np.linspace(7*np.pi/6, -5*np.pi/6, self.timestep) #array from 0-2pi of timestep values
-        self.center = [self.x_pos + .0053, self.y_pos, self.z_pos + .005]
+        self.theta = np.linspace(np.pi/2, -3*np.pi/2, self.timestep) #array from 0-2pi of timestep values
+        self.center = [self.x_pos - .0025, self.y_pos, self.z_pos - .005]
         self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
         if self.use_sphere:
             p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
@@ -273,8 +273,9 @@ class Mouse_Env(PyBulletEnv):
 
         #can edit threshold with episodes
         if self.istep > self.n_fixedsteps:
-            self.threshold = 0.009
+            self.threshold = 0.008
 
+        self.do_simulation()
         #print("activations: {}".format(act))
         #print("forces passed in: {}".format(forces))
 

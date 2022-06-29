@@ -13,7 +13,7 @@ from Mouse_RL_Environment import Mouse_Env
 from replay_memory import ReplayMemory, PolicyReplayMemory
 
 file_path = "./files/mouse_fixed.sdf" ###fixed mouse, arm training
-pose_file = "./files/default_pose.yaml"
+pose_file = "./files/right_forelimb_pose.yaml"
 muscle_config_file = "./files/right_forelimb.yaml"
 
 model_offset = (0.0, 0.0, .0475) #z position modified with global scaling
