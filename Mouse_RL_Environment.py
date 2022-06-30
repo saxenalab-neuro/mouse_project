@@ -69,7 +69,7 @@ class PyBulletEnv(gym.Env):
 
         self.radius = .006
         self.theta = np.linspace(np.pi/6, -11*np.pi/6, self.timestep) #array from 0-2pi of timestep values
-        self.center = [self.x_pos - .004, self.y_pos, self.z_pos - .0035]
+        self.center = [self.x_pos - .004, self.y_pos, self.z_pos - .0025]
         self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
         if self.use_sphere:
             p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
@@ -273,7 +273,7 @@ class Mouse_Env(PyBulletEnv):
 
         #can edit threshold with episodes
         if self.istep > self.n_fixedsteps:
-            self.threshold = 0.0065
+            self.threshold = 0.007
 
         self.do_simulation()
         #print("activations: {}".format(act))
