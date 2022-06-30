@@ -176,8 +176,8 @@ if __name__ == "__main__":
 
         if episode_reward > highest_reward:
             pylog.debug("Saving policy and Q network")
-            torch.save(agent.policy.state_dict(), 'policy_net.pth')
-            torch.save(agent.critic.state_dict(), 'value_net.pth')
+            torch.save(agent.policy.state_dict(), 'policy_net_0065.pth')
+            torch.save(agent.critic.state_dict(), 'value_net_0065.pth')
             highest_reward = episode_reward 
 
         pylog.debug('reward at total timestep {}: {}'.format(total_numsteps, episode_reward))
