@@ -68,7 +68,7 @@ class PyBulletEnv(gym.Env):
         self.z_pos = p.getLinkState(self.model, 115)[0][2]
 
         self.radius = .006
-        self.theta = np.linspace(np.pi/2, -3*np.pi/2, self.timestep) #array from 0-2pi of timestep values
+        self.theta = np.linspace(np.pi/3, -5*np.pi/3, self.timestep) #array from 0-2pi of timestep values
         self.center = [self.x_pos - .0025, self.y_pos, self.z_pos - .005]
         self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
         if self.use_sphere:

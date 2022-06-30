@@ -80,7 +80,7 @@ if __name__ == "__main__":
     ###PARAMETERS###
     frame_skip = 1
     n_frames = 1
-    timestep = 1000
+    timestep = 200
     mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset)
     # hard code num_inputs, 
     agent = SAC(41, mouseEnv.action_space, args)
@@ -175,7 +175,10 @@ if __name__ == "__main__":
                 break
 
         if episode_reward > highest_reward:
-             highest_reward = episode_reward 
+            pylog.debug("Saving policy and Q network")
+            torch.save(agent.policy.state_dict(), 'policy_net.pth')
+            torch.save(agent.critic.state_dict(), 'value_net.pth')
+            highest_reward = episode_reward 
 
         pylog.debug('reward at total timestep {}: {}'.format(total_numsteps, episode_reward))
         pylog.debug('highest reward so far: {}'.format(highest_reward))
