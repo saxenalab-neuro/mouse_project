@@ -114,7 +114,16 @@ if __name__ == "__main__":
         action_list= []
         done = False
 
-        disable_control(mouseEnv.model)
+        if i_episode % 3 == 0:
+            mouseEnv.timestep = 200
+            mouseEnv.theta = np.linspace(np.pi/6, -11*np.pi/6, 200)
+        elif i_episode % 3 == 1:
+            mouseEnv.timestep = 1000
+            mouseEnv.theta = np.linspace(np.pi/6, -11*np.pi/6, 1000)        
+        elif i_episode % 3 == 2:
+            mouseEnv.timestep = 2000
+            mouseEnv.theta = np.linspace(np.pi/6, -11*np.pi/6, 2000)
+
         mouseEnv.reset(pose_file)
         state = mouseEnv.get_cur_state()
 
@@ -176,8 +185,8 @@ if __name__ == "__main__":
 
         if episode_reward > highest_reward:
             pylog.debug("Saving policy and Q network")
-            torch.save(agent.policy.state_dict(), 'policy_net_0065.pth')
-            torch.save(agent.critic.state_dict(), 'value_net_0065.pth')
+            torch.save(agent.policy.state_dict(), 'policy_net_speed.pth')
+            torch.save(agent.critic.state_dict(), 'value_net_speed.pth')
             highest_reward = episode_reward 
 
         pylog.debug('reward at total timestep {}: {}'.format(total_numsteps, episode_reward))
@@ -186,8 +195,8 @@ if __name__ == "__main__":
         
         policy_memory.push(ep_trajectory)
 
-        if total_numsteps > args.num_steps:
-            break
+        #if total_numsteps > args.num_steps:
+        #    break
 
     reward_tracker = np.array(reward_tracker)
     policy_loss_tracker = np.array(policy_loss_tracker)
