@@ -21,7 +21,7 @@ sphere_file = "../files/sphere_small.urdf"
 class PyBulletEnv(gym.Env):
     def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset):
         #####BUILDS SERVER AND LOADS MODEL#####
-        self.client = p.connect(p.GUI)
+        self.client = p.connect(p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0,0,-9.81) #normal gravity
         self.plane = p.loadURDF("plane.urdf") #sets floor
@@ -33,7 +33,6 @@ class PyBulletEnv(gym.Env):
         self.joint_id = {}
         self.link_id = {}
         self.joint_type = {}
-        self.istep = 0
 
         if self.use_sphere:
             self.sphere = p.loadURDF("sphere_small.urdf", globalScaling=.1) #visualizes target position
@@ -71,6 +70,7 @@ class PyBulletEnv(gym.Env):
         self.theta = np.linspace(np.pi/6, -11*np.pi/6, self.timestep) #array from 0-2pi of timestep values
         self.center = [self.x_pos - .004, self.y_pos, self.z_pos - .0025]
         self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
+
         if self.use_sphere:
             p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
 
@@ -185,7 +185,7 @@ class Mouse_Env(PyBulletEnv):
         hand_pos =  np.array(p.getLinkState(self.model, 115)[0]) #(x, y, z)
         criteria = hand_pos - self.target_pos
 
-        if self.istep < self.timestep_limit:
+        if self.istep < self.timestep:
             if np.abs(criteria[0]) > self.threshold or np.abs(criteria[1]) > self.threshold or np.abs(criteria[2]) > self.threshold:
                 return True
             else:
@@ -194,20 +194,19 @@ class Mouse_Env(PyBulletEnv):
             return True
 
     def update_target_pos(self):
-        self.x_pos = self.radius * np.cos(self.theta[self.istep - 1]) + self.center[0]
-        self.z_pos = self.radius * np.sin(self.theta[self.istep - 1]) + self.center[2]
+        self.x_pos = self.radius * np.cos(self.theta[(self.istep%np.shape(self.theta)[0]) - 1]) + self.center[0]
+        self.z_pos = self.radius * np.sin(self.theta[(self.istep%np.shape(self.theta)[0]) - 1]) + self.center[2]
         self.target_pos = [self.x_pos, self.y_pos, self.z_pos]
 
         if self.use_sphere:
             p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
         
-
     def get_joint_positions_and_velocities(self):
         joint_positions = []
         joint_velocities = []
         for i in range(len(self.ctrl)):
             joint_positions.append(p.getJointState(self.model, self.ctrl[i])[0])
-            joint_velocities.append(p.getJointState(self.model, self.ctrl[i])[1])
+            joint_velocities.append(p.getJointState(self.model, self.ctrl[i])[1]/100)
         return joint_positions, joint_velocities
 
     def update_state(self, act, joint_positions, joint_velocities, target_velocity, distances):
@@ -291,7 +290,6 @@ class Mouse_Env(PyBulletEnv):
         curr_target = np.array(self.target_pos)
 
         target_vel = (curr_target - prev_target) / (.001) #need clarification about dt
-
         joint_positions, joint_velocities = self.get_joint_positions_and_velocities()
 
         state = self.update_state(act, joint_positions, joint_velocities, target_vel, distances)

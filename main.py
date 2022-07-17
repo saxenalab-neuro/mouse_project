@@ -19,8 +19,8 @@ muscle_config_file = "./files/right_forelimb.yaml"
 model_offset = (0.0, 0.0, .0475) #z position modified with global scaling
 
 #ARM CONTROL
-#ctrl = [107, 108, 109, 110, 111, 113, 114]
-ctrl = [3, 4, 5, 6, 7, 10, 11]
+ctrl = [107, 108, 109, 110, 111, 113, 114]
+#ctrl = [3, 4, 5, 6, 7, 10, 11]
 
 ###JOINT TO INDEX###
 #RShoulder_rotation - 107
@@ -80,16 +80,18 @@ if __name__ == "__main__":
     ###PARAMETERS###
     frame_skip = 1
     n_frames = 1
-    timestep = 200
+    timestep = 150
     mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset)
     # hard code num_inputs, 
     agent = SAC(41, mouseEnv.action_space, args)
+    #agent.policy.load_state_dict(torch.load('policy_net_007.pth'))
+    #agent.critic.load_state_dict(torch.load('value_net_007.pth'))
     policy_memory= PolicyReplayMemory(args.policy_replay_size, args.seed)
 
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
 
-    print(model_utils.generate_joint_id_to_name_dict(mouseEnv.model))
+    #print(model_utils.generate_joint_id_to_name_dict(mouseEnv.model))
     model_utils.disable_control(mouseEnv.model)
     p.setTimeStep(.001)
 
@@ -114,15 +116,21 @@ if __name__ == "__main__":
         action_list= []
         done = False
 
-        if i_episode % 3 == 0:
-            mouseEnv.timestep = 200
+        if i_episode % 5 == 0:
+            mouseEnv.timestep = 300
+            mouseEnv.theta = np.linspace(np.pi/6, -11*np.pi/6, 100)
+        elif i_episode % 5 == 1:
+            mouseEnv.timestep = 450
+            mouseEnv.theta = np.linspace(np.pi/6, -11*np.pi/6, 150)        
+        elif i_episode % 5 == 2:
+            mouseEnv.timestep = 600
             mouseEnv.theta = np.linspace(np.pi/6, -11*np.pi/6, 200)
-        elif i_episode % 3 == 1:
-            mouseEnv.timestep = 1000
-            mouseEnv.theta = np.linspace(np.pi/6, -11*np.pi/6, 1000)        
-        elif i_episode % 3 == 2:
-            mouseEnv.timestep = 2000
-            mouseEnv.theta = np.linspace(np.pi/6, -11*np.pi/6, 2000)
+        elif i_episode % 5 == 3:
+            mouseEnv.timestep = 750
+            mouseEnv.theta = np.linspace(np.pi/6, -11*np.pi/6, 250)
+        elif i_episode % 5 == 4:
+            mouseEnv.timestep = 900
+            mouseEnv.theta = np.linspace(np.pi/6, -11*np.pi/6, 300)
 
         mouseEnv.reset(pose_file)
         state = mouseEnv.get_cur_state()
@@ -133,7 +141,7 @@ if __name__ == "__main__":
         h_prev = torch.zeros(size=(1, 1, args.hidden_size))
         c_prev = torch.zeros(size=(1, 1, args.hidden_size))
 
-        for i in range(timestep):
+        for i in range(mouseEnv.timestep):
 
             with torch.no_grad():
                 if args.start_steps > total_numsteps:
@@ -189,7 +197,7 @@ if __name__ == "__main__":
             torch.save(agent.critic.state_dict(), 'value_net_speed.pth')
             highest_reward = episode_reward 
 
-        pylog.debug('reward at total timestep {}: {}'.format(total_numsteps, episode_reward))
+        pylog.debug('reward at total timestep {}: {}'.format(mouseEnv.timestep, episode_reward))
         pylog.debug('highest reward so far: {}'.format(highest_reward))
         reward_tracker.append(episode_reward)
         
