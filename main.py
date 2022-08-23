@@ -11,6 +11,7 @@ import farms_pylog as pylog
 import model_utils
 from Mouse_RL_Environment import Mouse_Env
 from replay_memory import ReplayMemory, PolicyReplayMemory
+import scipy.io
 
 file_path = "./files/mouse_fixed.sdf" ###fixed mouse, arm training
 pose_file = "./files/right_forelimb_pose.yaml"
@@ -80,12 +81,12 @@ if __name__ == "__main__":
     ###PARAMETERS###
     frame_skip = 1
     n_frames = 1
-    timestep = 150
+    timestep = 170
     mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset)
     # hard code num_inputs, 
     agent = SAC(41, mouseEnv.action_space, args)
-    #agent.policy.load_state_dict(torch.load('policy_net_007.pth'))
-    #agent.critic.load_state_dict(torch.load('value_net_007.pth'))
+    agent.policy.load_state_dict(torch.load('policy_net_0065.pth'))
+    agent.critic.load_state_dict(torch.load('value_net_0065.pth'))
     policy_memory= PolicyReplayMemory(args.policy_replay_size, args.seed)
 
     torch.manual_seed(args.seed)
@@ -99,6 +100,9 @@ if __name__ == "__main__":
     total_numsteps = 0
     updates = 0
     score_history= []
+    reward_tracker_slow = []
+    reward_tracker_fast = []
+    reward_tracker_1 = []
     test_history= []
     vel_his = []
     target_trajectory = []
@@ -109,6 +113,24 @@ if __name__ == "__main__":
 
     highest_reward = 0
 
+    #Data_Fast
+    mat = scipy.io.loadmat('/home/andrea/mouse_project/kinematics_session_mean_alt_fast.mat')
+    data = np.array(mat['kinematics_session_mean'][2])
+    data_fast = data[231:401:1]
+    #print(data)
+
+    #Data_Slow
+    mat = scipy.io.loadmat('/home/andrea/mouse_project/kinematics_session_mean_alt_slow .mat')
+    data = np.array(mat['kinematics_session_mean'][2])
+    data_slow = data[256:476:1]
+    #print(len(data_slow))
+
+    #Data_1
+    mat = scipy.io.loadmat('/home/andrea/mouse_project/kinematics_session_mean_alt1.mat')
+    data = np.array(mat['kinematics_session_mean'][2])
+    data_1= data[226:406:1]
+    #print(len(data_1))
+
     for i_episode in itertools.count(1):
 
         episode_reward = 0
@@ -116,21 +138,17 @@ if __name__ == "__main__":
         action_list= []
         done = False
 
-        if i_episode % 5 == 0:
-            mouseEnv.timestep = 300
-            mouseEnv.theta = np.linspace(np.pi/6, -11*np.pi/6, 100)
-        elif i_episode % 5 == 1:
-            mouseEnv.timestep = 450
-            mouseEnv.theta = np.linspace(np.pi/6, -11*np.pi/6, 150)        
-        elif i_episode % 5 == 2:
-            mouseEnv.timestep = 600
-            mouseEnv.theta = np.linspace(np.pi/6, -11*np.pi/6, 200)
-        elif i_episode % 5 == 3:
-            mouseEnv.timestep = 750
-            mouseEnv.theta = np.linspace(np.pi/6, -11*np.pi/6, 250)
-        elif i_episode % 5 == 4:
-            mouseEnv.timestep = 900
-            mouseEnv.theta = np.linspace(np.pi/6, -11*np.pi/6, 300)
+        if i_episode % 3 == 0:
+            mouseEnv.timestep = 170
+            mouseEnv.theta = data_fast
+
+        elif i_episode % 3 == 1:
+            mouseEnv.timestep =  220
+            mouseEnv.theta = data_slow
+
+        elif i_episode % 3 == 2:
+            mouseEnv.timestep = 180
+            mouseEnv.theta = data_1
 
         mouseEnv.reset(pose_file)
         state = mouseEnv.get_cur_state()
@@ -193,8 +211,8 @@ if __name__ == "__main__":
 
         if episode_reward > highest_reward:
             pylog.debug("Saving policy and Q network")
-            torch.save(agent.policy.state_dict(), 'policy_net_speed.pth')
-            torch.save(agent.critic.state_dict(), 'value_net_speed.pth')
+            torch.save(agent.policy.state_dict(), 'policy_net_speed_rerun.pth')
+            torch.save(agent.critic.state_dict(), 'value_net_speed_rerun.pth')
             highest_reward = episode_reward 
 
         pylog.debug('reward at total timestep {}: {}'.format(mouseEnv.timestep, episode_reward))

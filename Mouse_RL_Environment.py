@@ -8,6 +8,7 @@ import model_utils
 import pybullet as p
 import pybullet_data
 import yaml
+import scipy.io
 
 import farms_pylog as pylog
 try:
@@ -21,14 +22,14 @@ sphere_file = "../files/sphere_small.urdf"
 class PyBulletEnv(gym.Env):
     def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset):
         #####BUILDS SERVER AND LOADS MODEL#####
-        self.client = p.connect(p.DIRECT)
+        self.client = p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0,0,-9.81) #normal gravity
         self.plane = p.loadURDF("plane.urdf") #sets floor
         self.model = p.loadSDF(model_path)[0]#resizes, loads model, returns model id
         self.model_offset = model_offset
         p.resetBasePositionAndOrientation(self.model, self.model_offset, p.getQuaternionFromEuler([0, 0, 80.2])) #resets model position
-        self.use_sphere = False
+        self.use_sphere = True
         self.muscle_config_file = muscle_config_file
         self.joint_id = {}
         self.link_id = {}
@@ -66,9 +67,10 @@ class PyBulletEnv(gym.Env):
         self.y_pos = p.getLinkState(self.model, 115)[0][1]
         self.z_pos = p.getLinkState(self.model, 115)[0][2]
 
-        self.radius = .006
-        self.theta = np.linspace(np.pi/6, -11*np.pi/6, self.timestep) #array from 0-2pi of timestep values
-        self.center = [self.x_pos - .004, self.y_pos, self.z_pos - .0025]
+        self.radius = .03
+
+        self.theta = [0]
+        self.center = [self.x_pos - .017, self.y_pos, self.z_pos - .02]
         self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
 
         if self.use_sphere:
