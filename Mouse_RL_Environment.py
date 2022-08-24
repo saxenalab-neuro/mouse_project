@@ -22,14 +22,15 @@ sphere_file = "../files/sphere_small.urdf"
 class PyBulletEnv(gym.Env):
     def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset):
         #####BUILDS SERVER AND LOADS MODEL#####
-        self.client = p.connect(p.GUI)
+
+        self.client = p.connect(p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0,0,-9.81) #normal gravity
         self.plane = p.loadURDF("plane.urdf") #sets floor
         self.model = p.loadSDF(model_path)[0]#resizes, loads model, returns model id
         self.model_offset = model_offset
         p.resetBasePositionAndOrientation(self.model, self.model_offset, p.getQuaternionFromEuler([0, 0, 80.2])) #resets model position
-        self.use_sphere = True
+        self.use_sphere = False
         self.muscle_config_file = muscle_config_file
         self.joint_id = {}
         self.link_id = {}
@@ -53,11 +54,11 @@ class PyBulletEnv(gym.Env):
         #self.muscles.setup_integrator()
 
         #####META PARAMETERS FOR SIMULATION#####
-        self.n_fixedsteps= 20
+        self.n_fixedsteps= 10
         self.timestep_limit = timestep
         # self._max_episode_steps= self.timestep_limit/ 2
         self._max_episode_steps = timestep #Does not matter. It is being set in the main.py where the total number of steps are being changed.
-        self.threshold_user = 0.009
+        self.threshold_user = 0.008
         self.timestep = timestep
         self.frame_skip= frame_skip
 
@@ -70,7 +71,7 @@ class PyBulletEnv(gym.Env):
         self.radius = .03
 
         self.theta = [0]
-        self.center = [self.x_pos - .017, self.y_pos, self.z_pos - .02]
+        self.center = [self.x_pos - .02, self.y_pos, self.z_pos - .023]
         self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
 
         if self.use_sphere:
@@ -274,7 +275,7 @@ class Mouse_Env(PyBulletEnv):
 
         #can edit threshold with episodes
         if self.istep > self.n_fixedsteps:
-            self.threshold = 0.007
+            self.threshold = 0.004
 
         self.do_simulation()
         #print("activations: {}".format(act))
