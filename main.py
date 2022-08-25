@@ -85,8 +85,12 @@ if __name__ == "__main__":
     mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset)
     # hard code num_inputs, 
     agent = SAC(41, mouseEnv.action_space, args)
+    
     #agent.policy.load_state_dict(torch.load('policy_net_speed_rerun.pth'))
     #agent.critic.load_state_dict(torch.load('value_net_speed_rerun.pth'))
+    #agent.critic_optim.load_state_dict(torch.load('critic_optim_state.pth'))
+    #agent.policy_optim.load_state_dict(torch.load('policy_optim_state.pth'))
+
     policy_memory= PolicyReplayMemory(args.policy_replay_size, args.seed)
 
     torch.manual_seed(args.seed)
@@ -119,7 +123,7 @@ if __name__ == "__main__":
     dataset = ['data_fast', 'data_slow', 'data_1']
 
     #Data_Fast
-    mat = scipy.io.loadmat('/home/andrea/mouse_project/kinematics_session_mean_alt_fast.mat')
+    mat = scipy.io.loadmat('kinematics_session_mean_alt_fast.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_fast = data[231:401:1]
     data_fast_avg = 0
@@ -131,7 +135,7 @@ if __name__ == "__main__":
     #print(data)
 
     #Data_Slow
-    mat = scipy.io.loadmat('/home/andrea/mouse_project/kinematics_session_mean_alt_slow.mat')
+    mat = scipy.io.loadmat('kinematics_session_mean_alt_slow.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_slow = data[256:476:1]
     data_slow_avg = 0
@@ -139,7 +143,7 @@ if __name__ == "__main__":
     #print(len(data_slow))
 
     #Data_1
-    mat = scipy.io.loadmat('/home/andrea/mouse_project/kinematics_session_mean_alt1.mat')
+    mat = scipy.io.loadmat('kinematics_session_mean_alt1.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_1= data[226:406:1]
     data_1_avg = 0
@@ -230,10 +234,13 @@ if __name__ == "__main__":
                 break
         
         if episode_reward > highest_reward:
-            pylog.debug("Saving policy and Q network")
-            torch.save(agent.policy.state_dict(), 'policy_net_speed_rerun.pth')
-            torch.save(agent.critic.state_dict(), 'value_net_speed_rerun.pth')
             highest_reward = episode_reward 
+
+        pylog.debug("Saving policy and Q network")
+        torch.save(agent.policy.state_dict(), 'policy_net_speed_rerun.pth')
+        torch.save(agent.critic.state_dict(), 'value_net_speed_rerun.pth')
+        torch.save(agent.critic_optim.state_dict(), 'critic_optim_state.pth')
+        torch.save(agent.policy_optim.state_dict(), 'policy_optim_state.pth')
 
         pylog.debug('reward at total timestep {}: {}'.format(mouseEnv.timestep, episode_reward))
         pylog.debug('highest reward so far: {}'.format(highest_reward))
