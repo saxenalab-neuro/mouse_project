@@ -85,8 +85,8 @@ if __name__ == "__main__":
     mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset)
     # hard code num_inputs, 
     agent = SAC(41, mouseEnv.action_space, args)
-    agent.policy.load_state_dict(torch.load('policy_net_0065.pth'))
-    agent.critic.load_state_dict(torch.load('value_net_0065.pth'))
+    #agent.policy.load_state_dict(torch.load('policy_net_speed_rerun.pth'))
+    #agent.critic.load_state_dict(torch.load('value_net_speed_rerun.pth'))
     policy_memory= PolicyReplayMemory(args.policy_replay_size, args.seed)
 
     torch.manual_seed(args.seed)
@@ -107,28 +107,43 @@ if __name__ == "__main__":
     vel_his = []
     target_trajectory = []
     env_counter_his= []
+    kinematics_x = []
+    kinematics_y = []
+    kinematics_z = []
 
     reward_tracker = []
     policy_loss_tracker = []
 
     highest_reward = 0
 
+    dataset = ['data_fast', 'data_slow', 'data_1']
+
     #Data_Fast
     mat = scipy.io.loadmat('/home/andrea/mouse_project/kinematics_session_mean_alt_fast.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_fast = data[231:401:1]
+    data_fast_avg = 0
+    data_fast_rewards = []
+
+    mouseEnv.timestep = 170
+    mouseEnv.theta = data_fast
+    data_curr = dataset[0]
     #print(data)
 
     #Data_Slow
-    mat = scipy.io.loadmat('/home/andrea/mouse_project/kinematics_session_mean_alt_slow .mat')
+    mat = scipy.io.loadmat('/home/andrea/mouse_project/kinematics_session_mean_alt_slow.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_slow = data[256:476:1]
+    data_slow_avg = 0
+    data_slow_rewards = []
     #print(len(data_slow))
 
     #Data_1
     mat = scipy.io.loadmat('/home/andrea/mouse_project/kinematics_session_mean_alt1.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_1= data[226:406:1]
+    data_1_avg = 0
+    data_1_rewards = []
     #print(len(data_1))
 
     for i_episode in itertools.count(1):
@@ -138,17 +153,22 @@ if __name__ == "__main__":
         action_list= []
         done = False
 
-        if i_episode % 3 == 0:
+        min_avg = min(data_fast_avg, data_slow_avg, data_1_avg)
+        
+        if min_avg == data_fast_avg:
             mouseEnv.timestep = 170
             mouseEnv.theta = data_fast
+            data_curr = dataset[0]
 
-        elif i_episode % 3 == 1:
+        elif min_avg == data_slow_avg:
             mouseEnv.timestep =  220
             mouseEnv.theta = data_slow
+            data_curr = dataset[1]
 
-        elif i_episode % 3 == 2:
+        elif min_avg == data_1_avg:
             mouseEnv.timestep = 180
             mouseEnv.theta = data_1
+            data_curr = dataset[2]
 
         mouseEnv.reset(pose_file)
         state = mouseEnv.get_cur_state()
@@ -168,8 +188,8 @@ if __name__ == "__main__":
                     action, h_current, c_current = agent.select_action(state, h_prev, c_prev)  # Sample action from policy
 
             action_list.append(action)
-
-            if len(policy_memory) > args.policy_batch_size:
+            
+            if len(policy_memory.buffer) > args.policy_batch_size:
                 # Number of updates per step in environment
                 for i in range(args.updates_per_step):
                     # Update parameters of all the networks
@@ -185,7 +205,7 @@ if __name__ == "__main__":
                     # writer.add_scalar('loss/entropy_loss', ent_loss, updates)
                     # writer.add_scalar('entropy_temprature/alpha', alpha, updates)
                     updates += 1
-
+            
             next_state, reward, done = mouseEnv.step(action)
 
             episode_reward += reward
@@ -208,7 +228,7 @@ if __name__ == "__main__":
 
             if done:
                 break
-
+        
         if episode_reward > highest_reward:
             pylog.debug("Saving policy and Q network")
             torch.save(agent.policy.state_dict(), 'policy_net_speed_rerun.pth')
@@ -220,6 +240,17 @@ if __name__ == "__main__":
         reward_tracker.append(episode_reward)
         
         policy_memory.push(ep_trajectory)
+
+        if data_curr == 'data_fast':
+            data_fast_rewards.append(episode_reward)
+            data_fast_avg = (sum(data_fast_rewards))/(len(data_fast_rewards))
+        if data_curr == 'data_slow':
+            data_slow_rewards.append(episode_reward)
+            data_fast_avg = (sum(data_slow_rewards))/(len(data_slow_rewards))
+        if data_curr == 'data_1':
+            data_1_rewards.append(episode_reward)
+            data_fast_avg = (sum(data_1_rewards))/ (len(data_1_rewards))
+           
 
         #if total_numsteps > args.num_steps:
         #    break
