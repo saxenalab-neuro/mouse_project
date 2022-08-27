@@ -22,6 +22,7 @@ sphere_file = "../files/sphere_small.urdf"
 class PyBulletEnv(gym.Env):
     def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset):
         #####BUILDS SERVER AND LOADS MODEL#####
+
         self.client = p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0,0,-9.81) #normal gravity
@@ -53,25 +54,29 @@ class PyBulletEnv(gym.Env):
         #self.muscles.setup_integrator()
 
         #####META PARAMETERS FOR SIMULATION#####
-        self.n_fixedsteps= 20
+        self.n_fixedsteps= 10
         self.timestep_limit = timestep
         # self._max_episode_steps= self.timestep_limit/ 2
         self._max_episode_steps = timestep #Does not matter. It is being set in the main.py where the total number of steps are being changed.
-        self.threshold_user = 0.009
+        self.threshold_user = 0.012
         self.timestep = timestep
         self.frame_skip= frame_skip
 
         #####TARGET POSITION USING POINT IN SPACE: X, Y, Z#####
         ###x, y, z for initializing from hand starting position, target_pos for updating
-        self.x_pos = p.getLinkState(self.model, 115)[0][0]
+        #self.x_pos = p.getLinkState(self.model, 115)[0][0]
+        self.x_pos = [0]
         self.y_pos = p.getLinkState(self.model, 115)[0][1]
         self.z_pos = p.getLinkState(self.model, 115)[0][2]
 
-        self.radius = .03
+        #self.radius = .03
 
-        self.theta = [0]
-        self.center = [self.x_pos - .017, self.y_pos, self.z_pos - .02]
-        self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
+        #self.theta = [0]
+        #self.center = [self.x_pos - .02, self.y_pos, self.z_pos - .023]
+        #self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
+        #self.target_pos = [self.x_pos[0] - p.getLinkState(self.model, 115)[0][0] , self.y_pos, self.z_pos]
+        self.target_pos = [self.x_pos[0]/20 -.5955, self.y_pos, self.z_pos]
+
 
         if self.use_sphere:
             p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
@@ -100,7 +105,8 @@ class PyBulletEnv(gym.Env):
         self.container.initialize() #resets container
         self.muscles.setup_integrator() #resets muscles
         #resets target position
-        self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
+        #self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
+        self.target_pos = [self.x_pos[0]/20 -.5955, self.y_pos, self.z_pos]
         if self.use_sphere:
             p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
         
@@ -196,9 +202,10 @@ class Mouse_Env(PyBulletEnv):
             return True
 
     def update_target_pos(self):
-        self.x_pos = self.radius * np.cos(self.theta[(self.istep%np.shape(self.theta)[0]) - 1]) + self.center[0]
-        self.z_pos = self.radius * np.sin(self.theta[(self.istep%np.shape(self.theta)[0]) - 1]) + self.center[2]
-        self.target_pos = [self.x_pos, self.y_pos, self.z_pos]
+        #self.x_pos = self.radius * np.cos(self.theta[(self.istep%np.shape(self.theta)[0]) - 1]) + self.center[0]
+        #self.z_pos = self.radius * np.sin(self.theta[(self.istep%np.shape(self.theta)[0]) - 1]) + self.center[2]
+        self.target_pos = [self.x_pos[self.istep]/20-.5955, self.y_pos, self.z_pos]
+        #print('target', self.target_pos[0])
 
         if self.use_sphere:
             p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
@@ -274,7 +281,7 @@ class Mouse_Env(PyBulletEnv):
 
         #can edit threshold with episodes
         if self.istep > self.n_fixedsteps:
-            self.threshold = 0.007
+            self.threshold = 0.004
 
         self.do_simulation()
         #print("activations: {}".format(act))

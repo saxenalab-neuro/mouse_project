@@ -129,8 +129,8 @@ if __name__ == "__main__":
     data_fast_avg = 0
     data_fast_rewards = []
 
-    mouseEnv.timestep = 170
-    mouseEnv.theta = data_fast
+    mouseEnv.timestep = len(data_fast)
+    mouseEnv.x_pos = data_fast
     data_curr = dataset[0]
     #print(data)
 
@@ -157,26 +157,34 @@ if __name__ == "__main__":
         action_list= []
         done = False
 
+        #print(mouseEnv.x_pos[mouseEnv.istep])
+        #print(p.getLinkState(mouseEnv.model, 115)[0][0])
+
         min_avg = min(data_fast_avg, data_slow_avg, data_1_avg)
         
         if min_avg == data_fast_avg:
-            mouseEnv.timestep = 170
-            mouseEnv.theta = data_fast
+            #print('fast')
+            mouseEnv.timestep = len(data_fast)
+            mouseEnv.x_pos = data_fast
+            mouseEnv._max_episode_steps = timestep
             data_curr = dataset[0]
 
         elif min_avg == data_slow_avg:
-            mouseEnv.timestep =  220
-            mouseEnv.theta = data_slow
+            #print('slow')
+            mouseEnv.timestep =  len(data_slow)
+            mouseEnv.x_pos = data_slow
+            mouseEnv._max_episode_steps = timestep
             data_curr = dataset[1]
 
         elif min_avg == data_1_avg:
-            mouseEnv.timestep = 180
-            mouseEnv.theta = data_1
+            #print('1')
+            mouseEnv.timestep = len(data_1)
+            mouseEnv.x_pos = data_1
+            mouseEnv._max_episode_steps = timestep
             data_curr = dataset[2]
 
         mouseEnv.reset(pose_file)
         state = mouseEnv.get_cur_state()
-
         ep_trajectory = []
 
         #num_layers specified in the policy model 
