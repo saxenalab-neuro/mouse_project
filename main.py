@@ -1,9 +1,7 @@
 import pybullet as p
 import numpy as np
 import time
-import torch
 import argparse
-from sac import SAC
 import itertools
 from model_utils import disable_control
 import farms_pylog as pylog
@@ -12,6 +10,8 @@ import model_utils
 from Mouse_RL_Environment import Mouse_Env
 from replay_memory import ReplayMemory, PolicyReplayMemory
 import scipy.io
+from sac import SAC
+import torch
 
 file_path = "./files/mouse_fixed.sdf" ###fixed mouse, arm training
 pose_file = "./files/right_forelimb_pose.yaml"
@@ -58,7 +58,7 @@ if __name__ == "__main__":
                         help='random seed (default: 123456)')
     parser.add_argument('--batch_size', type=int, default=256, metavar='N',
                         help='batch size (default: 256)')
-    parser.add_argument('--policy_batch_size', type=int, default=6, metavar='N',
+    parser.add_argument('--policy_batch_size', type=int, default=16, metavar='N',
                         help='batch size (default: 6)')
     parser.add_argument('--num_steps', type=int, default=1000001, metavar='N',
                         help='maximum number of steps (default: 1000000)')
@@ -127,7 +127,7 @@ if __name__ == "__main__":
     data = np.array(mat['kinematics_session_mean'][2])
     data_fast = data[231:401:1]
     data_fast_avg = 0
-    data_fast_rewards = []
+    data_fast_rewards = [0]
 
     mouseEnv.timestep = len(data_fast)
     mouseEnv.x_pos = data_fast
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     data = np.array(mat['kinematics_session_mean'][2])
     data_slow = data[256:476:1]
     data_slow_avg = 0
-    data_slow_rewards = []
+    data_slow_rewards = [0]
     #print(len(data_slow))
 
     #Data_1
@@ -147,7 +147,7 @@ if __name__ == "__main__":
     data = np.array(mat['kinematics_session_mean'][2])
     data_1= data[226:406:1]
     data_1_avg = 0
-    data_1_rewards = []
+    data_1_rewards = [0]
     #print(len(data_1))
 
     for i_episode in itertools.count(1):
@@ -160,7 +160,7 @@ if __name__ == "__main__":
         #print(mouseEnv.x_pos[mouseEnv.istep])
         #print(p.getLinkState(mouseEnv.model, 115)[0][0])
 
-        min_avg = min(data_fast_avg, data_slow_avg, data_1_avg)
+        min_avg = min([data_fast_avg, data_slow_avg, data_1_avg])
         
         if min_avg == data_fast_avg:
             #print('fast')
@@ -256,15 +256,19 @@ if __name__ == "__main__":
         
         policy_memory.push(ep_trajectory)
 
-        if data_curr == 'data_fast':
-            data_fast_rewards.append(episode_reward)
-            data_fast_avg = (sum(data_fast_rewards))/(len(data_fast_rewards))
-        if data_curr == 'data_slow':
-            data_slow_rewards.append(episode_reward)
-            data_fast_avg = (sum(data_slow_rewards))/(len(data_slow_rewards))
-        if data_curr == 'data_1':
-            data_1_rewards.append(episode_reward)
-            data_fast_avg = (sum(data_1_rewards))/ (len(data_1_rewards))
+        if len(policy_memory.buffer) > args.policy_batch_size:
+            print('data fast: ', (sum(data_fast_rewards))/(len(data_fast_rewards) + .00001))
+            print('data slow: ', (sum(data_slow_rewards))/(len(data_slow_rewards) + .00001))
+            print('data med: ', (sum(data_1_rewards))/(len(data_1_rewards) + .00001))
+            data_fast_avg = (sum(data_fast_rewards))/(len(data_fast_rewards) + .00001)
+            data_slow_avg = (sum(data_slow_rewards))/(len(data_slow_rewards) + .00001)
+            data_1_avg = (sum(data_1_rewards))/ (len(data_1_rewards) + .00001)
+            if data_curr == 'data_fast':
+                data_fast_rewards.append(episode_reward)
+            if data_curr == 'data_slow':
+                data_slow_rewards.append(episode_reward)
+            if data_curr == 'data_1':
+                data_1_rewards.append(episode_reward)
            
 
         #if total_numsteps > args.num_steps:
