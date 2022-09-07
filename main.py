@@ -58,7 +58,7 @@ if __name__ == "__main__":
                         help='random seed (default: 123456)')
     parser.add_argument('--batch_size', type=int, default=256, metavar='N',
                         help='batch size (default: 256)')
-    parser.add_argument('--policy_batch_size', type=int, default=16, metavar='N',
+    parser.add_argument('--policy_batch_size', type=int, default=6, metavar='N',
                         help='batch size (default: 6)')
     parser.add_argument('--num_steps', type=int, default=1000001, metavar='N',
                         help='maximum number of steps (default: 1000000)')
@@ -86,8 +86,8 @@ if __name__ == "__main__":
     # hard code num_inputs, 
     agent = SAC(41, mouseEnv.action_space, args)
     
-    #agent.policy.load_state_dict(torch.load('policy_net_speed_rerun.pth'))
-    #agent.critic.load_state_dict(torch.load('value_net_speed_rerun.pth'))
+    agent.policy.load_state_dict(torch.load('policy_net_speed_rerun.pth'))
+    agent.critic.load_state_dict(torch.load('value_net_speed_rerun.pth'))
     #agent.critic_optim.load_state_dict(torch.load('critic_optim_state.pth'))
     #agent.policy_optim.load_state_dict(torch.load('policy_optim_state.pth'))
 
@@ -126,29 +126,30 @@ if __name__ == "__main__":
     mat = scipy.io.loadmat('kinematics_session_mean_alt_fast.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_fast = data[231:401:1]
+    mouse_fast = np.zeros_like(data_fast)
     data_fast_avg = 0
     data_fast_rewards = [0]
 
-    mouseEnv.timestep = len(data_fast)
-    mouseEnv.x_pos = data_fast
-    data_curr = dataset[0]
-    #print(data)
 
     #Data_Slow
     mat = scipy.io.loadmat('kinematics_session_mean_alt_slow.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_slow = data[256:476:1]
+    mouse_slow = np.zeros_like(data_slow)
     data_slow_avg = 0
     data_slow_rewards = [0]
     #print(len(data_slow))
+
 
     #Data_1
     mat = scipy.io.loadmat('kinematics_session_mean_alt1.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_1= data[226:406:1]
+    mouse_1 = np.zeros_like(data_1)
     data_1_avg = 0
     data_1_rewards = [0]
     #print(len(data_1))
+
 
     for i_episode in itertools.count(1):
 
@@ -160,27 +161,22 @@ if __name__ == "__main__":
         #print(mouseEnv.x_pos[mouseEnv.istep])
         #print(p.getLinkState(mouseEnv.model, 115)[0][0])
 
-        min_avg = min([data_fast_avg, data_slow_avg, data_1_avg])
+        min_avg = min([data_slow_avg, data_fast_avg, data_1_avg])
         
         if min_avg == data_fast_avg:
             #print('fast')
-            mouseEnv.timestep = len(data_fast)
+            mouseEnv.timestep = len(data_fast) * 3
             mouseEnv.x_pos = data_fast
-            mouseEnv._max_episode_steps = timestep
             data_curr = dataset[0]
-
         elif min_avg == data_slow_avg:
             #print('slow')
-            mouseEnv.timestep =  len(data_slow)
+            mouseEnv.timestep =  len(data_slow) * 3
             mouseEnv.x_pos = data_slow
-            mouseEnv._max_episode_steps = timestep
             data_curr = dataset[1]
-
         elif min_avg == data_1_avg:
             #print('1')
-            mouseEnv.timestep = len(data_1)
+            mouseEnv.timestep = len(data_1) * 3
             mouseEnv.x_pos = data_1
-            mouseEnv._max_episode_steps = timestep
             data_curr = dataset[2]
 
         mouseEnv.reset(pose_file)
@@ -193,11 +189,12 @@ if __name__ == "__main__":
 
         for i in range(mouseEnv.timestep):
 
-            with torch.no_grad():
-                if args.start_steps > total_numsteps:
-                    action = mouseEnv.action_space.sample()  # Sample random action
-                else:
-                    action, h_current, c_current = agent.select_action(state, h_prev, c_prev)  # Sample action from policy
+            if i % 3 == 0:
+                with torch.no_grad():
+                    if args.start_steps > total_numsteps:
+                        action = mouseEnv.action_space.sample()  # Sample random action
+                    else:
+                        action, h_current, c_current = agent.select_action(state, h_prev, c_prev)  # Sample action from policy
 
             action_list.append(action)
             
@@ -218,7 +215,7 @@ if __name__ == "__main__":
                     # writer.add_scalar('entropy_temprature/alpha', alpha, updates)
                     updates += 1
             
-            next_state, reward, done = mouseEnv.step(action)
+            next_state, reward, done = mouseEnv.step(action, i_episode)
 
             episode_reward += reward
 
@@ -245,8 +242,8 @@ if __name__ == "__main__":
             highest_reward = episode_reward 
 
         pylog.debug("Saving policy and Q network")
-        torch.save(agent.policy.state_dict(), 'policy_net_speed_rerun.pth')
-        torch.save(agent.critic.state_dict(), 'value_net_speed_rerun.pth')
+        #torch.save(agent.policy.state_dict(), 'policy_net_speed_rerun.pth')
+        #torch.save(agent.critic.state_dict(), 'value_net_speed_rerun.pth')
         torch.save(agent.critic_optim.state_dict(), 'critic_optim_state.pth')
         torch.save(agent.policy_optim.state_dict(), 'policy_optim_state.pth')
 
@@ -270,7 +267,6 @@ if __name__ == "__main__":
             if data_curr == 'data_1':
                 data_1_rewards.append(episode_reward)
            
-
         #if total_numsteps > args.num_steps:
         #    break
 
