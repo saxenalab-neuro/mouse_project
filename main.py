@@ -34,6 +34,18 @@ ctrl = [107, 108, 109, 110, 111, 113, 114]
 #RMetacarpus1_flexion - 115, use link (carpus) for pos
 #Lumbar2_bending - 15, use link(lumbar 1) for stability reward
 
+def interpolate(orig_data):
+
+    interpolated = []
+    for i in range(len(orig_data)-1):
+        interpolated.append(orig_data[i])
+        interpolated_point = (i + (i+1)) / 2
+        y = orig_data[i] + (interpolated_point - i) * ((orig_data[i+1]-orig_data[i])/((i+1)-i))
+        interpolated.append(y)
+    interpolated.append(orig_data[-1])
+
+    return interpolated
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='PyTorch Soft Actor-Critic Args')
@@ -56,9 +68,7 @@ if __name__ == "__main__":
                         help='Automaically adjust α (default: False)')
     parser.add_argument('--seed', type=int, default=123456, metavar='N',
                         help='random seed (default: 123456)')
-    parser.add_argument('--batch_size', type=int, default=256, metavar='N',
-                        help='batch size (default: 256)')
-    parser.add_argument('--policy_batch_size', type=int, default=6, metavar='N',
+    parser.add_argument('--policy_batch_size', type=int, default=32, metavar='N',
                         help='batch size (default: 6)')
     parser.add_argument('--num_steps', type=int, default=1000001, metavar='N',
                         help='maximum number of steps (default: 1000000)')
@@ -70,8 +80,6 @@ if __name__ == "__main__":
                         help='Steps sampling random actions (default: 10000)')
     parser.add_argument('--target_update_interval', type=int, default=1, metavar='N',
                         help='Value target update per no. of updates per step (default: 1)')
-    parser.add_argument('--replay_size', type=int, default=1000000, metavar='N',
-                        help='size of replay buffer (default: 10000000)')
     parser.add_argument('--policy_replay_size', type=int, default=4000, metavar='N',
                         help='size of replay buffer (default: 2800)')
     parser.add_argument('--cuda', action="store_true",
@@ -86,11 +94,6 @@ if __name__ == "__main__":
     # hard code num_inputs, 
     agent = SAC(41, mouseEnv.action_space, args)
     
-    agent.policy.load_state_dict(torch.load('policy_net_speed_rerun.pth'))
-    agent.critic.load_state_dict(torch.load('value_net_speed_rerun.pth'))
-    #agent.critic_optim.load_state_dict(torch.load('critic_optim_state.pth'))
-    #agent.policy_optim.load_state_dict(torch.load('policy_optim_state.pth'))
-
     policy_memory= PolicyReplayMemory(args.policy_replay_size, args.seed)
 
     torch.manual_seed(args.seed)
@@ -130,7 +133,6 @@ if __name__ == "__main__":
     data_fast_avg = 0
     data_fast_rewards = [0]
 
-
     #Data_Slow
     mat = scipy.io.loadmat('kinematics_session_mean_alt_slow.mat')
     data = np.array(mat['kinematics_session_mean'][2])
@@ -139,7 +141,6 @@ if __name__ == "__main__":
     data_slow_avg = 0
     data_slow_rewards = [0]
     #print(len(data_slow))
-
 
     #Data_1
     mat = scipy.io.loadmat('kinematics_session_mean_alt1.mat')
@@ -150,6 +151,9 @@ if __name__ == "__main__":
     data_1_rewards = [0]
     #print(len(data_1))
 
+    data_fast_pos = 1
+    data_slow_pos = 1
+    data_1_pos = 1
 
     for i_episode in itertools.count(1):
 
@@ -162,23 +166,20 @@ if __name__ == "__main__":
         #print(p.getLinkState(mouseEnv.model, 115)[0][0])
 
         min_avg = min([data_slow_avg, data_fast_avg, data_1_avg])
-        
+
         if min_avg == data_fast_avg:
-            #print('fast')
-            mouseEnv.timestep = len(data_fast) * 3
+            mouseEnv.timestep = len(data_fast)
             mouseEnv.x_pos = data_fast
             data_curr = dataset[0]
         elif min_avg == data_slow_avg:
-            #print('slow')
-            mouseEnv.timestep =  len(data_slow) * 3
+            mouseEnv.timestep =  len(data_slow)
             mouseEnv.x_pos = data_slow
             data_curr = dataset[1]
         elif min_avg == data_1_avg:
-            #print('1')
-            mouseEnv.timestep = len(data_1) * 3
+            mouseEnv.timestep = len(data_1)
             mouseEnv.x_pos = data_1
             data_curr = dataset[2]
-
+ 
         mouseEnv.reset(pose_file)
         state = mouseEnv.get_cur_state()
         ep_trajectory = []
@@ -189,12 +190,11 @@ if __name__ == "__main__":
 
         for i in range(mouseEnv.timestep):
 
-            if i % 3 == 0:
-                with torch.no_grad():
-                    if args.start_steps > total_numsteps:
-                        action = mouseEnv.action_space.sample()  # Sample random action
-                    else:
-                        action, h_current, c_current = agent.select_action(state, h_prev, c_prev)  # Sample action from policy
+            with torch.no_grad():
+                if args.start_steps > total_numsteps:
+                    action = mouseEnv.action_space.sample()  # Sample random action
+                else:
+                    action, h_current, c_current = agent.select_action(state, h_prev, c_prev)  # Sample action from policy
 
             action_list.append(action)
             
@@ -204,15 +204,7 @@ if __name__ == "__main__":
                     # Update parameters of all the networks
                     critic_1_loss, critic_2_loss, policy_loss, ent_loss, alpha = agent.update_parameters(policy_memory, args.policy_batch_size, updates)
 
-                    #print('critic_1_loss: {}'.format(critic_1_loss))
-                    #print('critic_2_loss: {}'.format(critic_2_loss))
-                    #print('policy_loss: {}'.format(policy_loss))
                     policy_loss_tracker.append(policy_loss)
-                    # writer.add_scalar('loss/critic_1', critic_1_loss, updates)
-                    # writer.add_scalar('loss/critic_2', critic_2_loss, updates)
-                    # writer.add_scalar('loss/policy', policy_loss, updates)
-                    # writer.add_scalar('loss/entropy_loss', ent_loss, updates)
-                    # writer.add_scalar('entropy_temprature/alpha', alpha, updates)
                     updates += 1
             
             next_state, reward, done = mouseEnv.step(action, i_episode)
@@ -242,10 +234,8 @@ if __name__ == "__main__":
             highest_reward = episode_reward 
 
         pylog.debug("Saving policy and Q network")
-        #torch.save(agent.policy.state_dict(), 'policy_net_speed_rerun.pth')
-        #torch.save(agent.critic.state_dict(), 'value_net_speed_rerun.pth')
-        torch.save(agent.critic_optim.state_dict(), 'critic_optim_state.pth')
-        torch.save(agent.policy_optim.state_dict(), 'policy_optim_state.pth')
+        torch.save(agent.policy.state_dict(), 'policy_net_003.pth')
+        torch.save(agent.critic.state_dict(), 'value_net_003.pth')
 
         pylog.debug('reward at total timestep {}: {}'.format(mouseEnv.timestep, episode_reward))
         pylog.debug('highest reward so far: {}'.format(highest_reward))
@@ -254,27 +244,27 @@ if __name__ == "__main__":
         policy_memory.push(ep_trajectory)
 
         if len(policy_memory.buffer) > args.policy_batch_size:
-            print('data fast: ', (sum(data_fast_rewards))/(len(data_fast_rewards) + .00001))
-            print('data slow: ', (sum(data_slow_rewards))/(len(data_slow_rewards) + .00001))
-            print('data med: ', (sum(data_1_rewards))/(len(data_1_rewards) + .00001))
-            data_fast_avg = (sum(data_fast_rewards))/(len(data_fast_rewards) + .00001)
-            data_slow_avg = (sum(data_slow_rewards))/(len(data_slow_rewards) + .00001)
-            data_1_avg = (sum(data_1_rewards))/ (len(data_1_rewards) + .00001)
             if data_curr == 'data_fast':
-                data_fast_rewards.append(episode_reward)
+                if len(data_fast_rewards) < 1000:
+                    data_fast_rewards.append(None)
+                data_fast_rewards[data_fast_pos] = episode_reward
+                data_fast_pos = (data_fast_pos + 1) % 1000
             if data_curr == 'data_slow':
-                data_slow_rewards.append(episode_reward)
+                if len(data_slow_rewards) < 1000:
+                    data_slow_rewards.append(None)
+                data_slow_rewards[data_slow_pos] = episode_reward
+                data_slow_pos = (data_slow_pos + 1) % 1000
             if data_curr == 'data_1':
-                data_1_rewards.append(episode_reward)
+                if len(data_1_rewards) < 1000:
+                    data_1_rewards.append(None)
+                data_1_rewards[data_1_pos] = episode_reward
+                data_1_pos = (data_1_pos + 1) % 1000
+            print('data fast: ', ((sum(data_fast_rewards))/(len(data_fast_rewards) + .00001)) / len(data_fast))
+            print('data slow: ', ((sum(data_slow_rewards))/(len(data_slow_rewards) + .00001)) / len(data_slow))
+            print('data med: ', ((sum(data_1_rewards))/(len(data_1_rewards) + .00001)) / len(data_1))
+            data_fast_avg = ((sum(data_fast_rewards))/(len(data_fast_rewards) + .00001)) / len(data_fast)
+            data_slow_avg = ((sum(data_slow_rewards))/(len(data_slow_rewards) + .00001 )) / len(data_slow)
+            data_1_avg = ((sum(data_1_rewards))/ (len(data_1_rewards) + .00001)) / len(data_1)
            
-        #if total_numsteps > args.num_steps:
-        #    break
-
-    reward_tracker = np.array(reward_tracker)
-    policy_loss_tracker = np.array(policy_loss_tracker)
-
-    np.savetxt('rewards.txt', reward_tracker)
-    np.savetxt('policy_losses.txt', policy_loss_tracker)
-
     mouseEnv.close() #disconnects server
 

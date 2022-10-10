@@ -23,7 +23,7 @@ class PyBulletEnv(gym.Env):
     def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset):
         #####BUILDS SERVER AND LOADS MODEL#####
 
-        self.client = p.connect(p.GUI)
+        self.client = p.connect(p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0,0,-9.81) #normal gravity
         self.plane = p.loadURDF("plane.urdf") #sets floor
@@ -54,7 +54,7 @@ class PyBulletEnv(gym.Env):
         #self.muscles.setup_integrator()
 
         #####META PARAMETERS FOR SIMULATION#####
-        self.n_fixedsteps= 10
+        self.n_fixedsteps= 5
         self.timestep_limit = timestep
         # self._max_episode_steps= self.timestep_limit/ 2
         self._max_episode_steps = timestep #Does not matter. It is being set in the main.py where the total number of steps are being changed.
@@ -204,7 +204,7 @@ class Mouse_Env(PyBulletEnv):
     def update_target_pos(self):
         #self.x_pos = self.radius * np.cos(self.theta[(self.istep%np.shape(self.theta)[0]) - 1]) + self.center[0]
         #self.z_pos = self.radius * np.sin(self.theta[(self.istep%np.shape(self.theta)[0]) - 1]) + self.center[2]
-        self.target_pos = [self.x_pos[int((self.istep-1) % (self.timestep/3))]/20-.5935, self.y_pos, self.z_pos]
+        self.target_pos = [self.x_pos[(self.istep-1)]/20-.5935, self.y_pos, self.z_pos]
         #print('target', self.target_pos[0])
 
         if self.use_sphere:
@@ -226,9 +226,9 @@ class Mouse_Env(PyBulletEnv):
 
         joint_positions, _ = self.get_joint_positions_and_velocities()
         _, distance = self.get_reward()
-        target_vel = ((self.x_pos[0]/20-.5935) - (self.x_pos[1]/20-.5935)) / .001
+        #target_vel = ((self.x_pos[0]/20-.5935) - (self.x_pos[1]/20-.5935)) / .001
         #print(self.get_stim())
-        return [*list(self.get_activations()), *list(joint_positions), *[0., 0., 0., 0., 0., 0., 0.], *list(self.target_pos), *[target_vel, 0, 0], *distance]
+        return [*list(self.get_activations()), *list(joint_positions), *[0., 0., 0., 0., 0., 0., 0.], *list(self.target_pos), *[0, 0, 0], *distance]
     
     def controller_to_actuator(self, forces):
 
@@ -282,12 +282,7 @@ class Mouse_Env(PyBulletEnv):
 
         #can edit threshold with episodes
         if self.istep > self.n_fixedsteps:
-            if i_episode < 10000:
-                self.threshold = 0.006
-            elif i_episode < 20000:
-                self.threshold = 0.005
-            elif i_episode < 30000:
-                self.threshold = 0.004
+            self.threshold = .0035
 
         self.do_simulation()
         #print("activations: {}".format(act))
@@ -296,7 +291,7 @@ class Mouse_Env(PyBulletEnv):
         act = self.get_activations()
         reward, distances = self.get_reward()
         cost = self.get_cost(forces)
-        final_reward= (5*reward) - (.8*cost)
+        final_reward= (5*reward) - (.5*cost)
 
         done = self.is_done()
         
