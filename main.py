@@ -128,7 +128,7 @@ if __name__ == "__main__":
     #Data_Fast
     mat = scipy.io.loadmat('kinematics_session_mean_alt_fast.mat')
     data = np.array(mat['kinematics_session_mean'][2])
-    data_fast = data[231:401:1]
+    data_fast = data[231:401:1] * -1
     mouse_fast = np.zeros_like(data_fast)
     data_fast_avg = 0
     data_fast_rewards = [0]
@@ -136,7 +136,7 @@ if __name__ == "__main__":
     #Data_Slow
     mat = scipy.io.loadmat('kinematics_session_mean_alt_slow.mat')
     data = np.array(mat['kinematics_session_mean'][2])
-    data_slow = data[256:476:1]
+    data_slow = data[256:476:1] * -1
     mouse_slow = np.zeros_like(data_slow)
     data_slow_avg = 0
     data_slow_rewards = [0]
@@ -145,7 +145,7 @@ if __name__ == "__main__":
     #Data_1
     mat = scipy.io.loadmat('kinematics_session_mean_alt1.mat')
     data = np.array(mat['kinematics_session_mean'][2])
-    data_1= data[226:406:1]
+    data_1= data[226:406:1] * -1
     mouse_1 = np.zeros_like(data_1)
     data_1_avg = 0
     data_1_rewards = [0]
@@ -227,8 +227,8 @@ if __name__ == "__main__":
             episode_steps += 1
             total_numsteps += 1 
 
-            if done:
-                break
+            #if done:
+            #    break
         
         if episode_reward > highest_reward:
             highest_reward = episode_reward 

@@ -23,14 +23,14 @@ class PyBulletEnv(gym.Env):
     def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset):
         #####BUILDS SERVER AND LOADS MODEL#####
 
-        self.client = p.connect(p.DIRECT)
+        self.client = p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0,0,-9.81) #normal gravity
         self.plane = p.loadURDF("plane.urdf") #sets floor
         self.model = p.loadSDF(model_path)[0]#resizes, loads model, returns model id
         self.model_offset = model_offset
         p.resetBasePositionAndOrientation(self.model, self.model_offset, p.getQuaternionFromEuler([0, 0, 80.2])) #resets model position
-        self.use_sphere = False
+        self.use_sphere = True
         self.muscle_config_file = muscle_config_file
         self.joint_id = {}
         self.link_id = {}
@@ -75,7 +75,7 @@ class PyBulletEnv(gym.Env):
         #self.center = [self.x_pos - .02, self.y_pos, self.z_pos - .023]
         #self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
         #self.target_pos = [self.x_pos[0] - p.getLinkState(self.model, 115)[0][0] , self.y_pos, self.z_pos]
-        self.target_pos = [self.x_pos[0]/20 -.5935, self.y_pos, self.z_pos]
+        self.target_pos = [self.x_pos[0]/20 -.5935 + 1.340, self.y_pos, self.z_pos]
 
 
         if self.use_sphere:
@@ -106,7 +106,7 @@ class PyBulletEnv(gym.Env):
         self.muscles.setup_integrator() #resets muscles
         #resets target position
         #self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
-        self.target_pos = [self.x_pos[0]/20 -.5935, self.y_pos, self.z_pos]
+        self.target_pos = [self.x_pos[0]/20 -.5935 + 1.340, self.y_pos, self.z_pos]
         if self.use_sphere:
             p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
         
@@ -204,7 +204,7 @@ class Mouse_Env(PyBulletEnv):
     def update_target_pos(self):
         #self.x_pos = self.radius * np.cos(self.theta[(self.istep%np.shape(self.theta)[0]) - 1]) + self.center[0]
         #self.z_pos = self.radius * np.sin(self.theta[(self.istep%np.shape(self.theta)[0]) - 1]) + self.center[2]
-        self.target_pos = [self.x_pos[(self.istep-1)]/20-.5935, self.y_pos, self.z_pos]
+        self.target_pos = [self.x_pos[(self.istep-1)]/20-.5935 + 1.340, self.y_pos, self.z_pos]
         #print('target', self.target_pos[0])
 
         if self.use_sphere:
