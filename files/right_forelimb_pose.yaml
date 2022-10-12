@@ -1,7 +1,7 @@
 #can play around with values
 RShoulder_rotation: 0.0
-RShoulder_adduction: -30.0
-RShoulder_flexion: -30.0
+RShoulder_adduction: -20.0
+RShoulder_flexion: -15.0
 
 RElbow_flexion: 70.0
 RElbow_supination: 0.0

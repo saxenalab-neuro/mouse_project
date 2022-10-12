@@ -68,7 +68,7 @@ if __name__ == "__main__":
                         help='Automaically adjust α (default: False)')
     parser.add_argument('--seed', type=int, default=123456, metavar='N',
                         help='random seed (default: 123456)')
-    parser.add_argument('--policy_batch_size', type=int, default=32, metavar='N',
+    parser.add_argument('--policy_batch_size', type=int, default=64, metavar='N',
                         help='batch size (default: 6)')
     parser.add_argument('--num_steps', type=int, default=1000001, metavar='N',
                         help='maximum number of steps (default: 1000000)')
@@ -227,15 +227,15 @@ if __name__ == "__main__":
             episode_steps += 1
             total_numsteps += 1 
 
-            #if done:
-            #    break
+            if done:
+                break
         
         if episode_reward > highest_reward:
             highest_reward = episode_reward 
 
         pylog.debug("Saving policy and Q network")
-        torch.save(agent.policy.state_dict(), 'policy_net_003.pth')
-        torch.save(agent.critic.state_dict(), 'value_net_003.pth')
+        torch.save(agent.policy.state_dict(), 'policy_net.pth')
+        torch.save(agent.critic.state_dict(), 'value_net.pth')
 
         pylog.debug('reward at total timestep {}: {}'.format(mouseEnv.timestep, episode_reward))
         pylog.debug('highest reward so far: {}'.format(highest_reward))
