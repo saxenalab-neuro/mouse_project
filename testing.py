@@ -1,7 +1,7 @@
 import pybullet as p
 import pybullet_data
 
-import model_utils
+import scripts.model_utils as model_utils
 
 file_path = "/Users/andreachacon/Documents/GitHub/mouse_project/files/mouse_test.sdf" 
 pose_file = "/Users/andreachacon/Documents/GitHub/mouse_project/files/default_pose.yaml"
