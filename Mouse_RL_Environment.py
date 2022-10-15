@@ -23,7 +23,7 @@ class PyBulletEnv(gym.Env):
     def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset):
         #####BUILDS SERVER AND LOADS MODEL#####
 
-        self.client = p.connect(p.GUI)
+        self.client = p.connect(p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0,0,-9.81) #normal gravity
         self.plane = p.loadURDF("plane.urdf") #sets floor
@@ -54,11 +54,11 @@ class PyBulletEnv(gym.Env):
         #self.muscles.setup_integrator()
 
         #####META PARAMETERS FOR SIMULATION#####
-        self.n_fixedsteps= 10
+        self.n_fixedsteps= 5
         self.timestep_limit = timestep
         # self._max_episode_steps= self.timestep_limit/ 2
         self._max_episode_steps = timestep #Does not matter. It is being set in the main.py where the total number of steps are being changed.
-        self.threshold_user = 0.007
+        self.threshold_user = 0.006
         self.timestep = timestep
         self.frame_skip= frame_skip
 
@@ -67,7 +67,9 @@ class PyBulletEnv(gym.Env):
         #self.x_pos = p.getLinkState(self.model, 115)[0][0]
         self.x_pos = [0]
         self.y_pos = p.getLinkState(self.model, 115)[0][1]
-        self.z_pos = p.getLinkState(self.model, 115)[0][2]
+        self.z_theta = np.linspace(2*np.pi, 0, self.timestep_limit)
+        self.z_pos = (np.sin(self.z_theta[0]) + 11) / 500
+
 
         #self.radius = .03
 
@@ -106,6 +108,8 @@ class PyBulletEnv(gym.Env):
         self.muscles.setup_integrator() #resets muscles
         #resets target position
         #self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
+        self.z_theta = np.linspace(2*np.pi, 0, self.timestep_limit)
+        self.z_pos = (np.sin(self.z_theta[0]) + 11) / 500
         self.target_pos = [self.x_pos[0]/20 -.59 + 1.340, self.y_pos, self.z_pos]
         if self.use_sphere:
             p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
@@ -206,7 +210,7 @@ class Mouse_Env(PyBulletEnv):
     def update_target_pos(self):
         #self.x_pos = self.radius * np.cos(self.theta[(self.istep%np.shape(self.theta)[0]) - 1]) + self.center[0]
         #self.z_pos = self.radius * np.sin(self.theta[(self.istep%np.shape(self.theta)[0]) - 1]) + self.center[2]
-        self.target_pos = [self.x_pos[(self.istep-1)]/20-.59 + 1.340, self.y_pos, self.z_pos]
+        self.target_pos = [self.x_pos[(self.istep-1)]/20-.59 + 1.340, self.y_pos, ((np.sin(self.z_theta[self.istep-1])+11)/500)]
         #print('target', self.target_pos[0])
 
         if self.use_sphere:
@@ -285,8 +289,8 @@ class Mouse_Env(PyBulletEnv):
         #can edit threshold with episodes
         if self.istep > self.n_fixedsteps:
             self.threshold_x = .0035
-            self.threshold_y = .0025
-            self.threshold_z = .0025
+            self.threshold_y = .0045
+            self.threshold_z = .0045
 
         self.do_simulation()
         #print("activations: {}".format(act))
