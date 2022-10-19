@@ -66,7 +66,7 @@ if __name__ == "__main__":
                         help='Automaically adjust α (default: False)')
     parser.add_argument('--seed', type=int, default=123456, metavar='N',
                         help='random seed (default: 123456)')
-    parser.add_argument('--policy_batch_size', type=int, default=64, metavar='N',
+    parser.add_argument('--policy_batch_size', type=int, default=256, metavar='N',
                         help='batch size (default: 6)')
     parser.add_argument('--num_steps', type=int, default=1000001, metavar='N',
                         help='maximum number of steps (default: 1000000)')
@@ -127,6 +127,7 @@ if __name__ == "__main__":
     mat = scipy.io.loadmat('../data/kinematics_session_mean_alt_fast.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_fast = data[231:401:1] * -1
+    data_fast_cycles = [*data_fast, *data_fast, *data_fast]
     mouse_fast = np.zeros_like(data_fast)
     data_fast_avg = 0
     data_fast_rewards = [0]
@@ -135,6 +136,7 @@ if __name__ == "__main__":
     mat = scipy.io.loadmat('../data/kinematics_session_mean_alt_slow.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_slow = data[256:476:1] * -1
+    data_slow_cycles = [*data_slow, *data_slow, *data_slow]
     mouse_slow = np.zeros_like(data_slow)
     data_slow_avg = 0
     data_slow_rewards = [0]
@@ -144,6 +146,7 @@ if __name__ == "__main__":
     mat = scipy.io.loadmat('../data/kinematics_session_mean_alt1.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_1= data[226:406:1] * -1
+    data_1_cycles = [*data_1, *data_1, *data_1]
     mouse_1 = np.zeros_like(data_1)
     data_1_avg = 0
     data_1_rewards = [0]
@@ -166,16 +169,16 @@ if __name__ == "__main__":
         min_avg = min([data_slow_avg, data_fast_avg, data_1_avg])
 
         if min_avg == data_fast_avg:
-            mouseEnv.timestep = len(data_fast)
-            mouseEnv.x_pos = data_fast
+            mouseEnv.timestep = len(data_fast_cycles)
+            mouseEnv.x_pos = data_fast_cycles
             data_curr = dataset[0]
         elif min_avg == data_slow_avg:
-            mouseEnv.timestep =  len(data_slow)
-            mouseEnv.x_pos = data_slow
+            mouseEnv.timestep =  len(data_slow_cycles)
+            mouseEnv.x_pos = data_slow_cycles
             data_curr = dataset[1]
         elif min_avg == data_1_avg:
-            mouseEnv.timestep = len(data_1)
-            mouseEnv.x_pos = data_1
+            mouseEnv.timestep = len(data_1_cycles)
+            mouseEnv.x_pos = data_1_cycles
             data_curr = dataset[2]
  
         mouseEnv.reset(pose_file)
@@ -257,12 +260,12 @@ if __name__ == "__main__":
                     data_1_rewards.append(None)
                 data_1_rewards[data_1_pos] = episode_reward
                 data_1_pos = (data_1_pos + 1) % 1000
-            print('data fast: ', ((sum(data_fast_rewards))/(len(data_fast_rewards) + .00001)) / len(data_fast))
-            print('data slow: ', ((sum(data_slow_rewards))/(len(data_slow_rewards) + .00001)) / len(data_slow))
-            print('data med: ', ((sum(data_1_rewards))/(len(data_1_rewards) + .00001)) / len(data_1))
-            data_fast_avg = ((sum(data_fast_rewards))/(len(data_fast_rewards) + .00001)) / len(data_fast)
-            data_slow_avg = ((sum(data_slow_rewards))/(len(data_slow_rewards) + .00001 )) / len(data_slow)
-            data_1_avg = ((sum(data_1_rewards))/ (len(data_1_rewards) + .00001)) / len(data_1)
+            print('data fast: ', ((sum(data_fast_rewards))/(len(data_fast_rewards) + .00001)) / len(data_fast_cycles))
+            print('data slow: ', ((sum(data_slow_rewards))/(len(data_slow_rewards) + .00001)) / len(data_slow_cycles))
+            print('data med: ', ((sum(data_1_rewards))/(len(data_1_rewards) + .00001)) / len(data_1_cycles))
+            data_fast_avg = ((sum(data_fast_rewards))/(len(data_fast_rewards) + .00001)) / len(data_fast_cycles)
+            data_slow_avg = ((sum(data_slow_rewards))/(len(data_slow_rewards) + .00001 )) / len(data_slow_cycles)
+            data_1_avg = ((sum(data_1_rewards))/ (len(data_1_rewards) + .00001)) / len(data_1_cycles)
            
     mouseEnv.close() #disconnects server
 

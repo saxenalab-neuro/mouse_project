@@ -89,17 +89,25 @@ class QNetwork(nn.Module):
 
         # Q1 architecture
         self.linear1 = nn.Linear(num_inputs + num_actions, hidden_dim)
+        nn.init.xavier_normal_(self.linear1.weight)
         self.linear2 = nn.Linear(num_inputs + num_actions, hidden_dim)
+        nn.init.xavier_normal_(self.linear2.weight)
         self.lstm1 = nn.LSTM(hidden_dim, hidden_dim, num_layers= 1, batch_first= True)
         self.linear3 = nn.Linear(2 * hidden_dim, hidden_dim)
+        nn.init.xavier_normal_(self.linear3.weight)
         self.linear4 = nn.Linear(hidden_dim, 1)
+        nn.init.xavier_normal_(self.linear4.weight)
 
         # Q2 architecture
         self.linear5 = nn.Linear(num_inputs + num_actions, hidden_dim)
+        nn.init.xavier_normal_(self.linear5.weight)
         self.linear6 = nn.Linear(num_inputs + num_actions, hidden_dim)
+        nn.init.xavier_normal_(self.linear6.weight)
         self.lstm2 = nn.LSTM(hidden_dim, hidden_dim, num_layers= 1, batch_first= True)
         self.linear7 = nn.Linear(2 * hidden_dim, hidden_dim)
+        nn.init.xavier_normal_(self.linear7.weight)
         self.linear8 = nn.Linear(hidden_dim, 1)
+        nn.init.xavier_normal_(self.linear8.weight)
 
         self.apply(weights_init_)
         # notes: weights_init for the LSTM layer
@@ -207,8 +215,10 @@ class GaussianPolicyLSTM(nn.Module):
         super(GaussianPolicyLSTM, self).__init__()
 
         self.linear1 = nn.Linear(num_inputs, hidden_dim)
+        nn.init.xavier_normal_(self.linear1.weight)
         self.lstm = nn.LSTM(num_inputs, hidden_dim, num_layers= 1, batch_first= True)
         self.linear2 = nn.Linear(2*hidden_dim, hidden_dim)
+        nn.init.xavier_normal_(self.linear2.weight)
 
         self.mean_linear = nn.Linear(hidden_dim, num_actions)
         self.log_std_linear = nn.Linear(hidden_dim, num_actions)
