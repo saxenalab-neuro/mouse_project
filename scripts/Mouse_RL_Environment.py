@@ -66,19 +66,12 @@ class PyBulletEnv(gym.Env):
 
         #####TARGET POSITION USING POINT IN SPACE: X, Y, Z#####
         ###x, y, z for initializing from hand starting position, target_pos for updating
-        #self.x_pos = p.getLinkState(self.model, 115)[0][0]
         self.x_pos = [0]
         self.y_pos = p.getLinkState(self.model, 115)[0][1]
         self.z_theta = np.linspace(0, 2*np.pi, self.timestep//3)
         self.z_theta_cycle = [*self.z_theta, *self.z_theta, *self.z_theta]
         self.z_pos = (np.sin(self.z_theta[0]) + 11) / 500
 
-        #self.radius = .03
-
-        #self.theta = [0]
-        #self.center = [self.x_pos - .02, self.y_pos, self.z_pos - .023]
-        #self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
-        #self.target_pos = [self.x_pos[0] - p.getLinkState(self.model, 115)[0][0] , self.y_pos, self.z_pos]
         self.target_pos = [self.x_pos[0]/self.scale - self.offset, self.y_pos, self.z_pos]
 
 
@@ -109,7 +102,6 @@ class PyBulletEnv(gym.Env):
         self.container.initialize() #resets container
         self.muscles.setup_integrator() #resets muscles
         #resets target position
-        #self.target_pos = [self.radius * np.cos(self.theta[0]) + self.center[0], self.y_pos, self.radius * np.sin(self.theta[0]) + self.center[2]]
         self.z_theta = np.linspace(0, 2*np.pi, self.timestep//3)
         self.z_theta_cycle = [*self.z_theta, *self.z_theta, *self.z_theta]
         self.z_pos = (np.sin(self.z_theta[0]) + 11) / 500
@@ -211,10 +203,8 @@ class Mouse_Env(PyBulletEnv):
             return True
 
     def update_target_pos(self):
-        #self.x_pos = self.radius * np.cos(self.theta[(self.istep%np.shape(self.theta)[0]) - 1]) + self.center[0]
         #self.z_pos = self.radius * np.sin(self.theta[(self.istep%np.shape(self.theta)[0]) - 1]) + self.center[2]
         self.target_pos = [self.x_pos[(self.istep-1)]/self.scale-self.offset, self.y_pos, ((np.sin(self.z_theta_cycle[self.istep-1])+11)/500)]
-        #print('target', self.target_pos[0])
 
         if self.use_sphere:
             p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
@@ -235,8 +225,6 @@ class Mouse_Env(PyBulletEnv):
 
         joint_positions, _ = self.get_joint_positions_and_velocities()
         _, distance = self.get_reward()
-        #target_vel = ((self.x_pos[0]/20-.5935) - (self.x_pos[1]/20-.5935)) / .001
-        #print(self.get_stim())
         return [*list(self.get_activations()), *list(joint_positions), *[0., 0., 0., 0., 0., 0., 0.], *list(self.target_pos), *[0, 0, 0], *distance]
     
     def controller_to_actuator(self, forces):
@@ -296,8 +284,6 @@ class Mouse_Env(PyBulletEnv):
             self.threshold_z = .0035
 
         self.do_simulation()
-        #print("activations: {}".format(act))
-        #print("forces passed in: {}".format(forces))
 
         act = self.get_activations()
         reward, distances = self.get_reward()
