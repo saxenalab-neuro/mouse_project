@@ -20,10 +20,12 @@ from farms_container import Container
 sphere_file = "../files/sphere_small.urdf"
 
 class PyBulletEnv(gym.Env):
-    def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset):
+    def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset, visualize):
         #####BUILDS SERVER AND LOADS MODEL#####
-
-        self.client = p.connect(p.DIRECT)
+        if(visualize):
+            self.client = p.connect(p.GUI)
+        else:
+            self.client = p.connect(p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0,0,-9.81) #normal gravity
         self.plane = p.loadURDF("plane.urdf") #sets floor
@@ -58,7 +60,6 @@ class PyBulletEnv(gym.Env):
         #####META PARAMETERS FOR SIMULATION#####
         self.n_fixedsteps= 10
         self.timestep_limit = timestep
-        # self._max_episode_steps= self.timestep_limit/ 2
         self._max_episode_steps = timestep #Does not matter. It is being set in the main.py where the total number of steps are being changed.
         self.threshold_user = 0.006
         self.timestep = timestep
@@ -203,7 +204,6 @@ class Mouse_Env(PyBulletEnv):
             return True
 
     def update_target_pos(self):
-        #self.z_pos = self.radius * np.sin(self.theta[(self.istep%np.shape(self.theta)[0]) - 1]) + self.center[2]
         self.target_pos = [self.x_pos[(self.istep-1)]/self.scale-self.offset, self.y_pos, ((np.sin(self.z_theta_cycle[self.istep-1])+11)/500)]
 
         if self.use_sphere:

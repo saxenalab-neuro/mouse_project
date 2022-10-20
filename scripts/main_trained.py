@@ -89,9 +89,7 @@ if __name__ == "__main__":
     n_frames = 1
     timestep = 170
 
-    vizualize = False
-
-    mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset, vizualize)
+    mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset)
     agent = SAC(41, mouseEnv.action_space, args)
     policy_memory= PolicyReplayMemory(args.policy_replay_size, args.seed)
 
@@ -194,7 +192,7 @@ if __name__ == "__main__":
                     action, h_current, c_current = agent.select_action(state, h_prev, c_prev)  # Sample action from policy
 
             action_list.append(action)
-            
+            '''''
             if len(policy_memory.buffer) > args.policy_batch_size:
                 # Number of updates per step in environment
                 for i in range(args.updates_per_step):
@@ -203,6 +201,7 @@ if __name__ == "__main__":
 
                     policy_loss_tracker.append(policy_loss)
                     updates += 1
+            '''''
             
             next_state, reward, done = mouseEnv.step(action, i_episode)
 
@@ -227,10 +226,11 @@ if __name__ == "__main__":
         
         if episode_reward > highest_reward:
             highest_reward = episode_reward 
-
+        '''
         pylog.debug("Saving policy and Q network")
         torch.save(agent.policy.state_dict(), '../models/policy_net.pth')
         torch.save(agent.critic.state_dict(), '../models/value_net.pth')
+        '''
 
         pylog.debug('reward at total timestep {}: {}'.format(mouseEnv.timestep, episode_reward))
         pylog.debug('highest reward so far: {}'.format(highest_reward))
