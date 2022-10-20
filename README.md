@@ -1,7 +1,7 @@
 # mouse_project
 
 ## Installation Guide
-1. Install the necessary dependencies: pyquaternion, scipy, numpy, pytorch, pyyaml, (open ai) gym, cython
+1. Install the necessary dependencies: pyquaternion, scipy, numpy (currently cannot be greater than 1.23.0), pytorch, pyyaml, (open ai) gym, cython
 2. Clone this respository
 3. To install the mouse model libraries git clone the following repository into the top directory: 
     - [pybullet](https://github.com/bulletphysics/bullet3) 
