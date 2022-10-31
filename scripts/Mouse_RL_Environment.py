@@ -20,12 +20,9 @@ from farms_container import Container
 sphere_file = "../files/sphere_small.urdf"
 
 class PyBulletEnv(gym.Env):
-    def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset, visualize):
+    def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset):
         #####BUILDS SERVER AND LOADS MODEL#####
-        if(visualize):
-            self.client = p.connect(p.GUI)
-        else:
-            self.client = p.connect(p.DIRECT)
+        self.client = p.connect(p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0,0,-9.81) #normal gravity
         self.plane = p.loadURDF("plane.urdf") #sets floor
@@ -34,7 +31,7 @@ class PyBulletEnv(gym.Env):
         p.resetBasePositionAndOrientation(self.model, self.model_offset, p.getQuaternionFromEuler([0, 0, 80.2])) #resets model position
         self.use_sphere = False
         self.scale = 22
-        self.offset = -.689
+        self.offset = -.6815
         self.muscle_config_file = muscle_config_file
         self.joint_id = {}
         self.link_id = {}
@@ -58,10 +55,10 @@ class PyBulletEnv(gym.Env):
         #self.muscles.setup_integrator()
 
         #####META PARAMETERS FOR SIMULATION#####
-        self.n_fixedsteps= 10
+        self.n_fixedsteps= 20
         self.timestep_limit = timestep
         self._max_episode_steps = timestep #Does not matter. It is being set in the main.py where the total number of steps are being changed.
-        self.threshold_user = 0.006
+        self.threshold_user = 0.004
         self.timestep = timestep
         self.frame_skip= frame_skip
 
@@ -70,7 +67,8 @@ class PyBulletEnv(gym.Env):
         self.x_pos = [0]
         self.y_pos = p.getLinkState(self.model, 115)[0][1]
         self.z_theta = np.linspace(0, 2*np.pi, self.timestep//3)
-        self.z_theta_cycle = [*self.z_theta, *self.z_theta, *self.z_theta]
+        self.starting_z = [0] * 20
+        self.z_theta_cycle = [*self.starting_z, *self.z_theta, *self.z_theta, *self.z_theta]
         self.z_pos = (np.sin(self.z_theta[0]) + 11) / 500
 
         self.target_pos = [self.x_pos[0]/self.scale - self.offset, self.y_pos, self.z_pos]
@@ -104,7 +102,8 @@ class PyBulletEnv(gym.Env):
         self.muscles.setup_integrator() #resets muscles
         #resets target position
         self.z_theta = np.linspace(0, 2*np.pi, self.timestep//3)
-        self.z_theta_cycle = [*self.z_theta, *self.z_theta, *self.z_theta]
+        self.starting_z = [0] * 20
+        self.z_theta_cycle = [*self.starting_z, *self.z_theta, *self.z_theta, *self.z_theta]
         self.z_pos = (np.sin(self.z_theta[0]) + 11) / 500
         self.target_pos = [self.x_pos[0]/self.scale -self.offset, self.y_pos, self.z_pos]
         if self.use_sphere:
@@ -122,30 +121,6 @@ class PyBulletEnv(gym.Env):
         self.container.update_log()
         p.stepSimulation()
     
-    def get_lce(self):
-        stim = []
-
-        stim.append(self.container.muscles.forces.get_parameter_value('tendon_force_RIGHT_FORE_AN'))
-        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_BBL"))
-        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_BBS"))
-        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_BRA"))
-        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_COR"))
-        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_ECRB"))
-        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_ECRL"))
-        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_ECU"))
-        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_EIP1"))
-        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_EIP2"))
-        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_FCR"))
-        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_FCU"))
-        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_PLO"))
-        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_PQU"))
-        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_PTE"))
-        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_TBL"))
-        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_TBM"))
-        stim.append(self.container.muscles.forces.get_parameter_value("tendon_force_RIGHT_FORE_TBO"))
-
-        return stim
-
     #####DISCONNECTS SERVER#####
     def close(self):
         p.disconnect(self.client)
@@ -183,9 +158,9 @@ class Mouse_Env(PyBulletEnv):
             reward = -5
         
         else:
-            r_x= 1/(5000**d_x)
-            r_y= 1/(5000**d_y)
-            r_z= 1/(5000**d_z)
+            r_x= 1/(2500**d_x)
+            r_y= 1/(2500**d_y)
+            r_z= 1/(2500**d_z)
 
             reward= r_x + r_y + r_z
 
@@ -279,16 +254,21 @@ class Mouse_Env(PyBulletEnv):
 
         #can edit threshold with episodes
         if self.istep > self.n_fixedsteps:
-            self.threshold_x = .0035
-            self.threshold_y = .0045
-            self.threshold_z = .0035
+            if i_episode < self.timestep // 3:
+                self.threshold_x = .006
+                self.threshold_y = .006
+                self.threshold_z = .006
+            elif i_episode > self.timestep // 3:
+                self.threshold_x = .004
+                self.threshold_y = .004
+                self.threshold_z = .004
 
         self.do_simulation()
 
         act = self.get_activations()
         reward, distances = self.get_reward()
         cost = self.get_cost(forces)
-        final_reward= (5*reward) - (2*cost)
+        final_reward= (5*reward) - (cost)
 
         done = self.is_done()
         

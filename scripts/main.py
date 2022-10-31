@@ -44,7 +44,7 @@ def interpolate(orig_data):
 
     return interpolated
 
-if __name__ == "__main__":
+def main():
 
     parser = argparse.ArgumentParser(description='PyTorch Soft Actor-Critic Args')
     parser.add_argument('--env-name', default="HalfCheetah-v2",
@@ -66,7 +66,7 @@ if __name__ == "__main__":
                         help='Automaically adjust α (default: False)')
     parser.add_argument('--seed', type=int, default=123456, metavar='N',
                         help='random seed (default: 123456)')
-    parser.add_argument('--policy_batch_size', type=int, default=256, metavar='N',
+    parser.add_argument('--policy_batch_size', type=int, default=32, metavar='N',
                         help='batch size (default: 6)')
     parser.add_argument('--num_steps', type=int, default=1000001, metavar='N',
                         help='maximum number of steps (default: 1000000)')
@@ -89,9 +89,7 @@ if __name__ == "__main__":
     n_frames = 1
     timestep = 170
 
-    vizualize = False
-
-    mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset, vizualize)
+    mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset)
     agent = SAC(41, mouseEnv.action_space, args)
     policy_memory= PolicyReplayMemory(args.policy_replay_size, args.seed)
 
@@ -127,7 +125,9 @@ if __name__ == "__main__":
     mat = scipy.io.loadmat('../data/kinematics_session_mean_alt_fast.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_fast = data[231:401:1] * -1
-    data_fast_cycles = [*data_fast, *data_fast, *data_fast]
+    data_fast = [-13.45250312, *data_fast[8:]]
+    stabilize_fast = [data_fast[0]] * 20
+    data_fast_cycles = [*stabilize_fast, *data_fast, *data_fast, *data_fast]
     mouse_fast = np.zeros_like(data_fast)
     data_fast_avg = 0
     data_fast_rewards = [0]
@@ -136,7 +136,8 @@ if __name__ == "__main__":
     mat = scipy.io.loadmat('../data/kinematics_session_mean_alt_slow.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_slow = data[256:476:1] * -1
-    data_slow_cycles = [*data_slow, *data_slow, *data_slow]
+    stabilize_slow = [data_slow[0]] * 20
+    data_slow_cycles = [*stabilize_slow, *data_slow, *data_slow, *data_slow]
     mouse_slow = np.zeros_like(data_slow)
     data_slow_avg = 0
     data_slow_rewards = [0]
@@ -145,7 +146,9 @@ if __name__ == "__main__":
     mat = scipy.io.loadmat('../data/kinematics_session_mean_alt1.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_1= data[226:406:1] * -1
-    data_1_cycles = [*data_1, *data_1, *data_1]
+    data_1 = [-13.45250312, *data_1[4:]]
+    stabilize_1 = [data_1[0]] * 20
+    data_1_cycles = [*stabilize_1, *data_1, *data_1, *data_1]
     mouse_1 = np.zeros_like(data_1)
     data_1_avg = 0
     data_1_rewards = [0]
@@ -263,3 +266,5 @@ if __name__ == "__main__":
            
     mouseEnv.close() #disconnects server
 
+if __name__ == '__main__':
+    main()
