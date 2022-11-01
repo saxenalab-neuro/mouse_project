@@ -253,11 +253,11 @@ class Mouse_Env(PyBulletEnv):
 
         #can edit threshold with episodes
         if self.istep > self.n_fixedsteps:
-            if i_episode < self.timestep // 3:
+            if self.istep < ((self.timestep - 20) // 3) + 20:
                 self.threshold_x = .006
                 self.threshold_y = .006
                 self.threshold_z = .006
-            elif i_episode > self.timestep // 3:
+            else:
                 self.threshold_x = .004
                 self.threshold_y = .004
                 self.threshold_z = .004
@@ -267,7 +267,7 @@ class Mouse_Env(PyBulletEnv):
         act = self.get_activations()
         reward, distances = self.get_reward()
         cost = self.get_cost(forces)
-        final_reward= (5*reward) - (cost)
+        final_reward= (5*reward) - (.5*cost)
 
         done = self.is_done()
         
