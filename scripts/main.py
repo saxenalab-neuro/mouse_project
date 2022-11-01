@@ -5,6 +5,7 @@ import argparse
 import itertools
 import scipy.io
 import torch
+import matplotlib.pyplot as plt
 
 import farms_pylog as pylog
 import model_utils as model_utils
@@ -121,32 +122,53 @@ def main():
 
     dataset = ['data_fast', 'data_slow', 'data_1']
 
-    #Data_Fast
+    ########################### Data_Fast ###############################
     mat = scipy.io.loadmat('../data/kinematics_session_mean_alt_fast.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_fast = data[231:401:1] * -1
-    data_fast = [-13.45250312, *data_fast[8:]]
+    # need to interpolate to get rid of jumps, adding 20 timesteps
+    interp_data = [-13.45250312, data_fast[-1]]
+    for i in range(4):
+        interp_data = interpolate(interp_data)
+    # remove last and first element which are already in the data
+    interp_data = interp_data[1:-1]
+    interp_data.reverse()
+    # add these to the kinematics and remove the jump between cycles
+    data_fast = [-13.45250312, *data_fast[8:], *interp_data]
+    # stabilize itself before moving
     stabilize_fast = [data_fast[0]] * 20
     data_fast_cycles = [*stabilize_fast, *data_fast, *data_fast, *data_fast]
+
     mouse_fast = np.zeros_like(data_fast)
     data_fast_avg = 0
     data_fast_rewards = [0]
 
-    #Data_Slow
+    ########################### Data_Slow ###############################
     mat = scipy.io.loadmat('../data/kinematics_session_mean_alt_slow.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_slow = data[256:476:1] * -1
+    interp_data_slow = [data_slow[0], data_slow[-1]]
+
+    for i in range(2):
+        interp_data_slow = interpolate(interp_data_slow)
+    # remove last and first element which are already in the data
+    interp_data_slow = interp_data_slow[1:-1]
+    interp_data_slow.reverse()
+
+    data_slow = [*data_slow, *interp_data_slow]
     stabilize_slow = [data_slow[0]] * 20
     data_slow_cycles = [*stabilize_slow, *data_slow, *data_slow, *data_slow]
+    
     mouse_slow = np.zeros_like(data_slow)
     data_slow_avg = 0
     data_slow_rewards = [0]
 
-    #Data_1
+    ############################ Data_1 ##############################
     mat = scipy.io.loadmat('../data/kinematics_session_mean_alt1.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_1= data[226:406:1] * -1
-    data_1 = [-13.45250312, *data_1[4:]]
+    data_1 = [-13.45250312, *data_1[4:-2]]
+
     stabilize_1 = [data_1[0]] * 20
     data_1_cycles = [*stabilize_1, *data_1, *data_1, *data_1]
     mouse_1 = np.zeros_like(data_1)

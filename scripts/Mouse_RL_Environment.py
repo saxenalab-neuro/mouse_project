@@ -22,7 +22,7 @@ sphere_file = "../files/sphere_small.urdf"
 class PyBulletEnv(gym.Env):
     def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset):
         #####BUILDS SERVER AND LOADS MODEL#####
-        self.client = p.connect(p.DIRECT)
+        self.client = p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0,0,-9.81) #normal gravity
         self.plane = p.loadURDF("plane.urdf") #sets floor
@@ -56,9 +56,8 @@ class PyBulletEnv(gym.Env):
 
         #####META PARAMETERS FOR SIMULATION#####
         self.n_fixedsteps= 20
-        self.timestep_limit = timestep
         self._max_episode_steps = timestep #Does not matter. It is being set in the main.py where the total number of steps are being changed.
-        self.threshold_user = 0.004
+        self.threshold_user = 0.0045
         self.timestep = timestep
         self.frame_skip= frame_skip
 
@@ -66,7 +65,7 @@ class PyBulletEnv(gym.Env):
         ###x, y, z for initializing from hand starting position, target_pos for updating
         self.x_pos = [0]
         self.y_pos = p.getLinkState(self.model, 115)[0][1]
-        self.z_theta = np.linspace(0, 2*np.pi, self.timestep//3)
+        self.z_theta = np.linspace(0, 2*np.pi, (self.timestep - 20) // 3)
         self.starting_z = [0] * 20
         self.z_theta_cycle = [*self.starting_z, *self.z_theta, *self.z_theta, *self.z_theta]
         self.z_pos = (np.sin(self.z_theta[0]) + 11) / 500
@@ -101,7 +100,7 @@ class PyBulletEnv(gym.Env):
         self.container.initialize() #resets container
         self.muscles.setup_integrator() #resets muscles
         #resets target position
-        self.z_theta = np.linspace(0, 2*np.pi, self.timestep//3)
+        self.z_theta = np.linspace(0, 2*np.pi, (self.timestep - 20) // 3)
         self.starting_z = [0] * 20
         self.z_theta_cycle = [*self.starting_z, *self.z_theta, *self.z_theta, *self.z_theta]
         self.z_pos = (np.sin(self.z_theta[0]) + 11) / 500
