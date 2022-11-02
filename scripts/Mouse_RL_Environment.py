@@ -20,9 +20,12 @@ from farms_container import Container
 sphere_file = "../files/sphere_small.urdf"
 
 class PyBulletEnv(gym.Env):
-    def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset):
+    def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset, vizualize):
         #####BUILDS SERVER AND LOADS MODEL#####
-        self.client = p.connect(p.GUI)
+        if(vizualize):
+            self.client = p.connect(p.GUI)
+        else:
+            self.client = p.connect(p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0,0,-9.81) #normal gravity
         self.plane = p.loadURDF("plane.urdf") #sets floor
@@ -126,8 +129,8 @@ class PyBulletEnv(gym.Env):
 
 class Mouse_Env(PyBulletEnv):
 
-    def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset):
-        PyBulletEnv.__init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset)
+    def __init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset, vizualize):
+        PyBulletEnv.__init__(self, model_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset, vizualize)
         u = self.container.muscles.activations
         self.muscle_params = {}
         self.muscle_excitation = {}

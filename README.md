@@ -1,7 +1,8 @@
-# mouse_project
+# Mouse Simulation
 
 ## Installation Guide
-1. Install the necessary dependencies: pyquaternion, scipy, numpy (currently cannot be greater than 1.23.0), pytorch, pyyaml, (open ai) gym, cython
+1. Install the necessary dependencies: pyquaternion, scipy(1.8.1), numpy(1.2..0), pytorch, pyyaml(6.0), (open ai) gym, cython(0.29.32), pandas, colorama (0.4.5), matplotlib
+- Note: To ensure proper installation versions (of those specified), pip install the farms_muscle library before installing the rest of the dependencies
 2. Clone this respository
 3. To install the mouse model libraries git clone the following repository into the top directory: 
     - [pybullet](https://github.com/bulletphysics/bullet3) 
@@ -14,7 +15,7 @@
     ```
     pip install -e .
     ```
-
+    
 ## Simulation
 1. To begin training, enter the scripts folder and run:
     ```
@@ -24,3 +25,5 @@
     ```
     python main_trained.py
     ```
+## Logistics
+The data we used to train the mouse is readily available on under the data folder. Any scripts/demos to train/run the simulation are under the scripts folder. Any scripts to analyze the neural activity is found under the Data_Analysis folder.

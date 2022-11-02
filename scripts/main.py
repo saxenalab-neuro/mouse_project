@@ -32,7 +32,8 @@ ctrl = [107, 108, 109, 110, 111, 113, 114]
 #RWrist_adduction - 113
 #RWrist_flexion - 114
 #RMetacarpus1_flexion - 115, use link (carpus) for pos
-
+ 
+### INTERPOLATION
 def interpolate(orig_data):
 
     interpolated = []
@@ -46,7 +47,7 @@ def interpolate(orig_data):
     return interpolated
 
 def main():
-
+    ### PARAMETERS ###
     parser = argparse.ArgumentParser(description='PyTorch Soft Actor-Critic Args')
     parser.add_argument('--env-name', default="HalfCheetah-v2",
                         help='Mujoco Gym environment (default: HalfCheetah-v2)')
@@ -85,22 +86,27 @@ def main():
                         help='run on CUDA (default: False)')
     args = parser.parse_args()
 
-    ###PARAMETERS###
+    ###SIMULATION PARAMETERS###
     frame_skip = 1
     n_frames = 1
     timestep = 170
 
-    mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset)
+    ### CREATE ENVIRONMENT, AGENT, MEMORY ###
+    visualize = True
+    mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset, visualize)
     agent = SAC(41, mouseEnv.action_space, args)
     policy_memory= PolicyReplayMemory(args.policy_replay_size, args.seed)
 
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
 
+    ### DISABLES CURRENT MOVEMENT ###
     model_utils.disable_control(mouseEnv.model)
+
+    ### 1SEC REAL TIME = 1 ms SIMULATION ###
     p.setTimeStep(.001)
 
-    # Training Loop
+    ### INITIALIZE ALL VALUES TO TRACK ###
     total_numsteps = 0
     updates = 0
     score_history= []
@@ -114,12 +120,11 @@ def main():
     kinematics_x = []
     kinematics_y = []
     kinematics_z = []
-
     reward_tracker = []
     policy_loss_tracker = []
-
     highest_reward = 0
 
+    ### DATA SET LOADING/PROCESSING ###
     dataset = ['data_fast', 'data_slow', 'data_1']
 
     ########################### Data_Fast ###############################
@@ -179,16 +184,16 @@ def main():
     data_slow_pos = 1
     data_1_pos = 1
 
-    # begin loop
+    ### BEGIN TRAINING LOOP
     for i_episode in itertools.count(1):
-
+        ### INITALIZE SIM PARAMETERS ###
         episode_reward = 0
         episode_steps = 0
         action_list= []
         done = False
 
+        ### DATA SELECTION BY AVERAGE PERFORMANCE ###
         min_avg = min([data_slow_avg, data_fast_avg, data_1_avg])
-
         if min_avg == data_fast_avg:
             mouseEnv.timestep = len(data_fast_cycles)
             mouseEnv.x_pos = data_fast_cycles
@@ -202,6 +207,7 @@ def main():
             mouseEnv.x_pos = data_1_cycles
             data_curr = dataset[2]
  
+        ### GET INITAL STATE + RESET MODEL BY POSE
         mouseEnv.reset(pose_file)
         state = mouseEnv.get_cur_state()
         ep_trajectory = []
@@ -210,8 +216,8 @@ def main():
         h_prev = torch.zeros(size=(1, 1, args.hidden_size))
         c_prev = torch.zeros(size=(1, 1, args.hidden_size))
 
+        ### STEPS PER EPISODE ###
         for i in range(mouseEnv.timestep):
-
             with torch.no_grad():
                 if args.start_steps > total_numsteps:
                     action = mouseEnv.action_space.sample()  # Sample random action
@@ -220,6 +226,7 @@ def main():
 
             action_list.append(action)
             
+            ### SIMULATION ###
             if len(policy_memory.buffer) > args.policy_batch_size:
                 # Number of updates per step in environment
                 for i in range(args.updates_per_step):
@@ -228,9 +235,8 @@ def main():
 
                     policy_loss_tracker.append(policy_loss)
                     updates += 1
-            
+            ### TRACKING REWARD + EXPERIENCE TUPLE###
             next_state, reward, done = mouseEnv.step(action, i_episode)
-
             episode_reward += reward
 
             mask = 1 if episode_steps == mouseEnv._max_episode_steps else float(not done)
@@ -246,10 +252,12 @@ def main():
 
             episode_steps += 1
             total_numsteps += 1 
-
+            
+            ### EARLY TERMINATION OF EPISODE
             if done:
                 break
         
+        ### SAVING MODELS + TRACKING VARIABLES ###
         if episode_reward > highest_reward:
             highest_reward = episode_reward 
 
@@ -263,6 +271,7 @@ def main():
         
         policy_memory.push(ep_trajectory)
 
+        ### AVERAGING CONDITIONS ### 
         if len(policy_memory.buffer) > args.policy_batch_size:
             if data_curr == 'data_fast':
                 if len(data_fast_rewards) < 1000:
