@@ -33,8 +33,8 @@ class PyBulletEnv(gym.Env):
         self.model_offset = model_offset
         p.resetBasePositionAndOrientation(self.model, self.model_offset, p.getQuaternionFromEuler([0, 0, 80.2])) #resets model position
         self.use_sphere = False
-        self.scale = 22
-        self.offset = -.6815
+        self.scale = 21
+        self.offset = -.71
         self.muscle_config_file = muscle_config_file
         self.joint_id = {}
         self.link_id = {}
@@ -47,7 +47,7 @@ class PyBulletEnv(gym.Env):
         self.pose_file = pose_file
         
         #####MUSCLES + DATA LOGGING#####
-        self.container = Container(max_iterations=int(1000000))
+        self.container = Container(max_iterations=int(10000000))
 
         # Physics simulation to namespace
         self.sim_data = self.container.add_namespace('physics')
@@ -58,9 +58,9 @@ class PyBulletEnv(gym.Env):
         #self.muscles.setup_integrator()
 
         #####META PARAMETERS FOR SIMULATION#####
-        self.n_fixedsteps= 20
+        self.n_fixedsteps = 0
         self._max_episode_steps = timestep #Does not matter. It is being set in the main.py where the total number of steps are being changed.
-        self.threshold_user = 0.0045
+        self.threshold_user = 0.0035
         self.timestep = timestep
         self.frame_skip= frame_skip
 
@@ -68,13 +68,10 @@ class PyBulletEnv(gym.Env):
         ###x, y, z for initializing from hand starting position, target_pos for updating
         self.x_pos = [0]
         self.y_pos = p.getLinkState(self.model, 115)[0][1]
-        self.z_theta = np.linspace(0, 2*np.pi, (self.timestep - 20) // 3)
-        self.starting_z = [0] * 20
-        self.z_theta_cycle = [*self.starting_z, *self.z_theta, *self.z_theta, *self.z_theta]
+        self.z_theta = np.linspace(0, 2*np.pi, self.timestep)
         self.z_pos = (np.sin(self.z_theta[0]) + 11) / 500
 
         self.target_pos = [self.x_pos[0]/self.scale - self.offset, self.y_pos, self.z_pos]
-
 
         if self.use_sphere:
             p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
@@ -103,9 +100,7 @@ class PyBulletEnv(gym.Env):
         self.container.initialize() #resets container
         self.muscles.setup_integrator() #resets muscles
         #resets target position
-        self.z_theta = np.linspace(0, 2*np.pi, (self.timestep - 20) // 3)
-        self.starting_z = [0] * 20
-        self.z_theta_cycle = [*self.starting_z, *self.z_theta, *self.z_theta, *self.z_theta]
+        self.z_theta = np.linspace(0, 2*np.pi, self.timestep)
         self.z_pos = (np.sin(self.z_theta[0]) + 11) / 500
         self.target_pos = [self.x_pos[0]/self.scale -self.offset, self.y_pos, self.z_pos]
         if self.use_sphere:
@@ -160,9 +155,9 @@ class Mouse_Env(PyBulletEnv):
             reward = -5
         
         else:
-            r_x= 1/(2500**d_x)
-            r_y= 1/(2500**d_y)
-            r_z= 1/(2500**d_z)
+            r_x= 1/(5000**d_x)
+            r_y= 1/(5000**d_y)
+            r_z= 1/(5000**d_z)
 
             reward= r_x + r_y + r_z
 
@@ -181,7 +176,7 @@ class Mouse_Env(PyBulletEnv):
             return True
 
     def update_target_pos(self):
-        self.target_pos = [self.x_pos[(self.istep-1)]/self.scale-self.offset, self.y_pos, ((np.sin(self.z_theta_cycle[self.istep-1])+11)/500)]
+        self.target_pos = [self.x_pos[(self.istep-1)]/self.scale-self.offset, self.y_pos, ((np.sin(self.z_theta[self.istep-1])+11)/500)]
 
         if self.use_sphere:
             p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
@@ -255,15 +250,9 @@ class Mouse_Env(PyBulletEnv):
         self.controller_to_actuator(forces)
 
         #can edit threshold with episodes
-        if self.istep > self.n_fixedsteps:
-            if self.istep < ((self.timestep - 20) // 3) + 20:
-                self.threshold_x = .006
-                self.threshold_y = .006
-                self.threshold_z = .006
-            else:
-                self.threshold_x = .004
-                self.threshold_y = .004
-                self.threshold_z = .004
+        self.threshold_x = .0032
+        self.threshold_y = .0032
+        self.threshold_z = .0032
 
         self.do_simulation()
 

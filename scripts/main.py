@@ -59,7 +59,7 @@ def main():
                         help='discount factor for reward (default: 0.99)')
     parser.add_argument('--tau', type=float, default=0.005, metavar='G',
                         help='target smoothing coefficient(τ) (default: 0.005)')
-    parser.add_argument('--lr', type=float, default=0.001, metavar='G',
+    parser.add_argument('--lr', type=float, default=0.0005, metavar='G',
                         help='learning rate (default: 0.001)')
     parser.add_argument('--alpha', type=float, default=0.2, metavar='G',
                         help='Temperature parameter α determines the relative importance of the entropy\
@@ -68,7 +68,7 @@ def main():
                         help='Automaically adjust α (default: False)')
     parser.add_argument('--seed', type=int, default=123456, metavar='N',
                         help='random seed (default: 123456)')
-    parser.add_argument('--policy_batch_size', type=int, default=32, metavar='N',
+    parser.add_argument('--policy_batch_size', type=int, default=8, metavar='N',
                         help='batch size (default: 6)')
     parser.add_argument('--num_steps', type=int, default=1000001, metavar='N',
                         help='maximum number of steps (default: 1000000)')
@@ -80,10 +80,12 @@ def main():
                         help='Steps sampling random actions (default: 10000)')
     parser.add_argument('--target_update_interval', type=int, default=1, metavar='N',
                         help='Value target update per no. of updates per step (default: 1)')
-    parser.add_argument('--policy_replay_size', type=int, default=4000, metavar='N',
+    parser.add_argument('--policy_replay_size', type=int, default=500000, metavar='N',
                         help='size of replay buffer (default: 2800)')
     parser.add_argument('--cuda', action="store_true",
                         help='run on CUDA (default: False)')
+    parser.add_argument('--visualize', type=bool, default=False,
+                        help='visualize mouse')
     args = parser.parse_args()
 
     ###SIMULATION PARAMETERS###
@@ -92,8 +94,7 @@ def main():
     timestep = 170
 
     ### CREATE ENVIRONMENT, AGENT, MEMORY ###
-    visualize = True
-    mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset, visualize)
+    mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset, args.visualize)
     agent = SAC(41, mouseEnv.action_space, args)
     policy_memory= PolicyReplayMemory(args.policy_replay_size, args.seed)
 
@@ -131,19 +132,8 @@ def main():
     mat = scipy.io.loadmat('../data/kinematics_session_mean_alt_fast.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_fast = data[231:401:1] * -1
-    # need to interpolate to get rid of jumps, adding 20 timesteps
-    interp_data = [-13.45250312, data_fast[-1]]
-    for i in range(4):
-        interp_data = interpolate(interp_data)
-    # remove last and first element which are already in the data
-    interp_data = interp_data[1:-1]
-    interp_data.reverse()
-    # add these to the kinematics and remove the jump between cycles
-    data_fast = [-13.45250312, *data_fast[8:], *interp_data]
-    # stabilize itself before moving
-    stabilize_fast = [data_fast[0]] * 20
-    data_fast_cycles = [*stabilize_fast, *data_fast, *data_fast, *data_fast]
-
+    data_fast = [-13.45250312, *data_fast[8:]]
+    # Data must start and end at same spot or there is jump
     mouse_fast = np.zeros_like(data_fast)
     data_fast_avg = 0
     data_fast_rewards = [0]
@@ -152,18 +142,6 @@ def main():
     mat = scipy.io.loadmat('../data/kinematics_session_mean_alt_slow.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_slow = data[256:476:1] * -1
-    interp_data_slow = [data_slow[0], data_slow[-1]]
-
-    for i in range(2):
-        interp_data_slow = interpolate(interp_data_slow)
-    # remove last and first element which are already in the data
-    interp_data_slow = interp_data_slow[1:-1]
-    interp_data_slow.reverse()
-
-    data_slow = [*data_slow, *interp_data_slow]
-    stabilize_slow = [data_slow[0]] * 20
-    data_slow_cycles = [*stabilize_slow, *data_slow, *data_slow, *data_slow]
-    
     mouse_slow = np.zeros_like(data_slow)
     data_slow_avg = 0
     data_slow_rewards = [0]
@@ -172,10 +150,7 @@ def main():
     mat = scipy.io.loadmat('../data/kinematics_session_mean_alt1.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_1= data[226:406:1] * -1
-    data_1 = [-13.45250312, *data_1[4:-2]]
-
-    stabilize_1 = [data_1[0]] * 20
-    data_1_cycles = [*stabilize_1, *data_1, *data_1, *data_1]
+    data_1 = [-13.45250312, *data_1[4:]]
     mouse_1 = np.zeros_like(data_1)
     data_1_avg = 0
     data_1_rewards = [0]
@@ -193,18 +168,17 @@ def main():
         done = False
 
         ### DATA SELECTION BY AVERAGE PERFORMANCE ###
-        min_avg = min([data_slow_avg, data_fast_avg, data_1_avg])
-        if min_avg == data_fast_avg:
-            mouseEnv.timestep = len(data_fast_cycles)
-            mouseEnv.x_pos = data_fast_cycles
+        if i_episode % 3 == 0:
+            mouseEnv.timestep = len(data_fast)
+            mouseEnv.x_pos = data_fast
             data_curr = dataset[0]
-        elif min_avg == data_slow_avg:
-            mouseEnv.timestep =  len(data_slow_cycles)
-            mouseEnv.x_pos = data_slow_cycles
+        elif i_episode % 3 == 1:
+            mouseEnv.timestep =  len(data_slow)
+            mouseEnv.x_pos = data_slow
             data_curr = dataset[1]
-        elif min_avg == data_1_avg:
-            mouseEnv.timestep = len(data_1_cycles)
-            mouseEnv.x_pos = data_1_cycles
+        elif i_episode % 3 == 2:
+            mouseEnv.timestep = len(data_1)
+            mouseEnv.x_pos = data_1
             data_curr = dataset[2]
  
         ### GET INITAL STATE + RESET MODEL BY POSE
@@ -232,9 +206,9 @@ def main():
                 for i in range(args.updates_per_step):
                     # Update parameters of all the networks
                     critic_1_loss, critic_2_loss, policy_loss, ent_loss, alpha = agent.update_parameters(policy_memory, args.policy_batch_size, updates)
-
                     policy_loss_tracker.append(policy_loss)
                     updates += 1
+
             ### TRACKING REWARD + EXPERIENCE TUPLE###
             next_state, reward, done = mouseEnv.step(action, i_episode)
             episode_reward += reward
@@ -261,17 +235,24 @@ def main():
         if episode_reward > highest_reward:
             highest_reward = episode_reward 
 
-        pylog.debug("Saving policy and Q network")
-        torch.save(agent.policy.state_dict(), '../models/policy_net.pth')
-        torch.save(agent.critic.state_dict(), '../models/value_net.pth')
-
-        pylog.debug('reward at total timestep {}: {}'.format(mouseEnv.timestep, episode_reward))
-        pylog.debug('highest reward so far: {}'.format(highest_reward))
-        reward_tracker.append(episode_reward)
+            pylog.debug("Saving policy and Q network")
+            torch.save(agent.policy.state_dict(), '../models/policy_net_best.pth')
+            torch.save(agent.critic.state_dict(), '../models/value_net_best.pth')
         
+        torch.save(agent.policy.state_dict(), '../models/policy_net_cur.pth')
+        torch.save(agent.critic.state_dict(), '../models/value_net_cur.pth')
+
+        pylog.debug('Iteration: {} | reward with total timestep {}: {}'.format(i_episode, mouseEnv.timestep, episode_reward))
+        pylog.debug('highest reward so far: {}'.format(highest_reward))
+
+        reward_tracker.append(episode_reward)
         policy_memory.push(ep_trajectory)
 
+        np.savetxt('../Score/rewards.txt', reward_tracker)
+        np.savetxt('../Score/policy_losses.txt', policy_loss_tracker)
+
         ### AVERAGING CONDITIONS ### 
+        '''
         if len(policy_memory.buffer) > args.policy_batch_size:
             if data_curr == 'data_fast':
                 if len(data_fast_rewards) < 1000:
@@ -294,7 +275,7 @@ def main():
             data_fast_avg = ((sum(data_fast_rewards))/(len(data_fast_rewards) + .00001)) / len(data_fast_cycles)
             data_slow_avg = ((sum(data_slow_rewards))/(len(data_slow_rewards) + .00001 )) / len(data_slow_cycles)
             data_1_avg = ((sum(data_1_rewards))/ (len(data_1_rewards) + .00001)) / len(data_1_cycles)
-           
+        '''
     mouseEnv.close() #disconnects server
 
 if __name__ == '__main__':

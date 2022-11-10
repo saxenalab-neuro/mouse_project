@@ -40,19 +40,19 @@ class PolicyReplayMemory:
     def sample(self, batch_size):
         batch = random.sample(self.buffer, batch_size)
 
-        state = [[list(element)[0] for element in sample]for sample in batch]
+        state = [np.array([list(element)[0] for element in sample]) for sample in batch]
         state = list(map(torch.FloatTensor, state))
 
-        action = [[list(element)[1] for element in sample]for sample in batch]
+        action = [np.array([list(element)[1] for element in sample]) for sample in batch]
         action = list(map(torch.FloatTensor, action))
 
-        reward = [[list(element)[2] for element in sample]for sample in batch]
+        reward = [np.array([list(element)[2] for element in sample]) for sample in batch]
         reward = list(map(torch.FloatTensor, reward))
 
-        next_state = [[list(element)[3] for element in sample]for sample in batch]
+        next_state = [np.array([list(element)[3] for element in sample]) for sample in batch]
         next_state = list(map(torch.FloatTensor, next_state))
 
-        done = [[list(element)[4] for element in sample]for sample in batch]
+        done = [np.array([list(element)[4] for element in sample]) for sample in batch]
         done = list(map(torch.FloatTensor, done))
 
         hi_lst = []
