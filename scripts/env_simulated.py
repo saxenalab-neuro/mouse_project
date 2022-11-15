@@ -33,11 +33,11 @@ class PyBulletEnv(gym.Env):
         self.model_offset = model_offset
         p.resetBasePositionAndOrientation(self.model, self.model_offset, p.getQuaternionFromEuler([0, 0, 80.2])) #resets model position
         self.use_sphere = True
-        self.scale = 200
-        self.z_offset = 4
-        self.x_offset = 15
-        self.start_interval = 3 * np.pi / 2
-        self.end_interval =  -3 * np.pi / 2
+        self.scale = 250
+        self.z_offset = 6
+        self.x_offset = 20
+        self.start_interval = -np.pi / 2
+        self.end_interval =  3 * np.pi / 2
         self.muscle_config_file = muscle_config_file
         self.joint_id = {}
         self.link_id = {}

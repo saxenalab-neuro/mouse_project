@@ -14,7 +14,7 @@ from SAC.replay_memory import PolicyReplayMemory
 from SAC.sac import SAC
 
 file_path = "../model_utilities/mouse_fixed.sdf" # mouse model, body fixed except for right arm
-pose_file = "../model_utilities/right_forelimb_pose.yaml" # pose file for original pose
+pose_file = "../model_utilities/right_forelimb_pose_sim.yaml" # pose file for original pose
 muscle_config_file = "../model_utilities/right_forelimb.yaml" # muscle file for right arm
 
 model_offset = (0.0, 0.0, .0475) #z position modified with global scaling
@@ -93,7 +93,7 @@ def main():
     ###SIMULATION PARAMETERS###
     frame_skip = 1
     n_frames = 1
-    timestep = 170
+    timestep = 150
 
     ### CREATE ENVIRONMENT, AGENT, MEMORY ###
     mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset, args.visualize)
@@ -206,31 +206,6 @@ def main():
         #np.savetxt('../Score/rewards_medium.txt', reward_tracker)
         #np.savetxt('../Score/policy_losses_medium.txt', policy_loss_tracker)
 
-        ### AVERAGING CONDITIONS ### 
-        '''
-        if len(policy_memory.buffer) > args.policy_batch_size:
-            if data_curr == 'data_fast':
-                if len(data_fast_rewards) < 1000:
-                    data_fast_rewards.append(None)
-                data_fast_rewards[data_fast_pos] = episode_reward
-                data_fast_pos = (data_fast_pos + 1) % 1000
-            if data_curr == 'data_slow':
-                if len(data_slow_rewards) < 1000:
-                    data_slow_rewards.append(None)
-                data_slow_rewards[data_slow_pos] = episode_reward
-                data_slow_pos = (data_slow_pos + 1) % 1000
-            if data_curr == 'data_1':
-                if len(data_1_rewards) < 1000:
-                    data_1_rewards.append(None)
-                data_1_rewards[data_1_pos] = episode_reward
-                data_1_pos = (data_1_pos + 1) % 1000
-            print('data fast: ', ((sum(data_fast_rewards))/(len(data_fast_rewards) + .00001)) / len(data_fast_cycles))
-            print('data slow: ', ((sum(data_slow_rewards))/(len(data_slow_rewards) + .00001)) / len(data_slow_cycles))
-            print('data med: ', ((sum(data_1_rewards))/(len(data_1_rewards) + .00001)) / len(data_1_cycles))
-            data_fast_avg = ((sum(data_fast_rewards))/(len(data_fast_rewards) + .00001)) / len(data_fast_cycles)
-            data_slow_avg = ((sum(data_slow_rewards))/(len(data_slow_rewards) + .00001 )) / len(data_slow_cycles)
-            data_1_avg = ((sum(data_1_rewards))/ (len(data_1_rewards) + .00001)) / len(data_1_cycles)
-        '''
     mouseEnv.close() #disconnects server
 
 if __name__ == '__main__':
