@@ -47,7 +47,7 @@ class PyBulletEnv(gym.Env):
         self.pose_file = pose_file
         
         #####MUSCLES + DATA LOGGING#####
-        self.container = Container(max_iterations=int(10000000))
+        self.container = Container(max_iterations=int(1000000000))
 
         # Physics simulation to namespace
         self.sim_data = self.container.add_namespace('physics')
@@ -155,9 +155,9 @@ class Mouse_Env(PyBulletEnv):
             reward = -5
         
         else:
-            r_x= 1/(5000**d_x)
-            r_y= 1/(5000**d_y)
-            r_z= 1/(5000**d_z)
+            r_x= 1/(2500**d_x)
+            r_y= 1/(2500**d_y)
+            r_z= 1/(2500**d_z)
 
             reward= r_x + r_y + r_z
 
@@ -250,9 +250,9 @@ class Mouse_Env(PyBulletEnv):
         self.controller_to_actuator(forces)
 
         #can edit threshold with episodes
-        self.threshold_x = .0032
-        self.threshold_y = .0032
-        self.threshold_z = .0032
+        self.threshold_x = .0035
+        self.threshold_y = .0035
+        self.threshold_z = .0035
 
         self.do_simulation()
 

@@ -32,7 +32,7 @@ class PyBulletEnv(gym.Env):
         self.model = p.loadSDF(model_path)[0]#resizes, loads model, returns model id
         self.model_offset = model_offset
         p.resetBasePositionAndOrientation(self.model, self.model_offset, p.getQuaternionFromEuler([0, 0, 80.2])) #resets model position
-        self.use_sphere = True
+        self.use_sphere = False
         self.scale = 250
         self.z_offset = 6
         self.x_offset = 20
@@ -63,7 +63,7 @@ class PyBulletEnv(gym.Env):
         #####META PARAMETERS FOR SIMULATION#####
         self.n_fixedsteps = 0
         self._max_episode_steps = timestep #Does not matter. It is being set in the main.py where the total number of steps are being changed.
-        self.threshold_user = 0.0032
+        self.threshold_user = 0.0035
         self.timestep = timestep
         self.frame_skip= frame_skip
 
@@ -164,9 +164,9 @@ class Mouse_Env(PyBulletEnv):
             reward = -5
         
         else:
-            r_x= 1/(5000**d_x)
-            r_y= 1/(5000**d_y)
-            r_z= 1/(5000**d_z)
+            r_x= 1/(2500**d_x)
+            r_y= 1/(2500**d_y)
+            r_z= 1/(2500**d_z)
 
             reward= r_x + r_y + r_z
 
@@ -259,9 +259,9 @@ class Mouse_Env(PyBulletEnv):
         self.controller_to_actuator(forces)
 
         #can edit threshold with episodes
-        self.threshold_x = .0032
-        self.threshold_y = .0032
-        self.threshold_z = .0032
+        self.threshold_x = .0035
+        self.threshold_y = .0035
+        self.threshold_z = .0035
 
         self.do_simulation()
 

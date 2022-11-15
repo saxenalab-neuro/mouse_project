@@ -13,9 +13,9 @@ from Mouse_RL_Environment import Mouse_Env
 from SAC.replay_memory import PolicyReplayMemory
 from SAC.sac import SAC
 
-file_path = "../model_utilities/mouse_fixed.sdf" # mouse model, body fixed except for right arm
-pose_file = "../model_utilities/right_forelimb_pose.yaml" # pose file for original pose
-muscle_config_file = "../model_utilities/right_forelimb.yaml" # muscle file for right arm
+file_path = "model_utilities/mouse_fixed.sdf" # mouse model, body fixed except for right arm
+pose_file = "model_utilities/right_forelimb_pose.yaml" # pose file for original pose
+muscle_config_file = "model_utilities/right_forelimb.yaml" # muscle file for right arm
 
 model_offset = (0.0, 0.0, .0475) #z position modified with global scaling
 
@@ -129,7 +129,7 @@ def main():
     dataset = ['data_fast', 'data_slow', 'data_1']
 
     ########################### Data_Fast ###############################
-    mat = scipy.io.loadmat('../data/kinematics_session_mean_alt_fast.mat')
+    mat = scipy.io.loadmat('data/kinematics_session_mean_alt_fast.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_fast = data[231:401:1] * -1
     data_fast = [-13.45250312, *data_fast[8:]]
@@ -139,7 +139,7 @@ def main():
     data_fast_rewards = [0]
 
     ########################### Data_Slow ###############################
-    mat = scipy.io.loadmat('../data/kinematics_session_mean_alt_slow.mat')
+    mat = scipy.io.loadmat('data/kinematics_session_mean_alt_slow.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_slow = data[256:476:1] * -1
     mouse_slow = np.zeros_like(data_slow)
@@ -147,7 +147,7 @@ def main():
     data_slow_rewards = [0]
 
     ############################ Data_1 ##############################
-    mat = scipy.io.loadmat('../data/kinematics_session_mean_alt1.mat')
+    mat = scipy.io.loadmat('data/kinematics_session_mean_alt1.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_1= data[226:406:1] * -1
     data_1 = [-13.45250312, *data_1[4:]]
@@ -235,12 +235,12 @@ def main():
         if episode_reward > highest_reward:
             highest_reward = episode_reward 
 
-            pylog.debug("Saving policy and Q network")
-            torch.save(agent.policy.state_dict(), '../models/policy_net_best.pth')
-            torch.save(agent.critic.state_dict(), '../models/value_net_best.pth')
+            #pylog.debug("Saving policy and Q network")
+            #torch.save(agent.policy.state_dict(), 'models/policy_net_best.pth')
+            #torch.save(agent.critic.state_dict(), 'models/value_net_best.pth')
         
-        torch.save(agent.policy.state_dict(), '../models/policy_net_cur.pth')
-        torch.save(agent.critic.state_dict(), '../models/value_net_cur.pth')
+        #torch.save(agent.policy.state_dict(), 'models/policy_net_cur.pth')
+        #torch.save(agent.critic.state_dict(), 'models/value_net_cur.pth')
 
         pylog.debug('Iteration: {} | reward with total timestep {}: {}'.format(i_episode, mouseEnv.timestep, episode_reward))
         pylog.debug('highest reward so far: {}'.format(highest_reward))
@@ -248,34 +248,9 @@ def main():
         reward_tracker.append(episode_reward)
         policy_memory.push(ep_trajectory)
 
-        np.savetxt('../Score/rewards.txt', reward_tracker)
-        np.savetxt('../Score/policy_losses.txt', policy_loss_tracker)
+        np.savetxt('Score/rewards.txt', reward_tracker)
+        np.savetxt('Score/policy_losses.txt', policy_loss_tracker)
 
-        ### AVERAGING CONDITIONS ### 
-        '''
-        if len(policy_memory.buffer) > args.policy_batch_size:
-            if data_curr == 'data_fast':
-                if len(data_fast_rewards) < 1000:
-                    data_fast_rewards.append(None)
-                data_fast_rewards[data_fast_pos] = episode_reward
-                data_fast_pos = (data_fast_pos + 1) % 1000
-            if data_curr == 'data_slow':
-                if len(data_slow_rewards) < 1000:
-                    data_slow_rewards.append(None)
-                data_slow_rewards[data_slow_pos] = episode_reward
-                data_slow_pos = (data_slow_pos + 1) % 1000
-            if data_curr == 'data_1':
-                if len(data_1_rewards) < 1000:
-                    data_1_rewards.append(None)
-                data_1_rewards[data_1_pos] = episode_reward
-                data_1_pos = (data_1_pos + 1) % 1000
-            print('data fast: ', ((sum(data_fast_rewards))/(len(data_fast_rewards) + .00001)) / len(data_fast_cycles))
-            print('data slow: ', ((sum(data_slow_rewards))/(len(data_slow_rewards) + .00001)) / len(data_slow_cycles))
-            print('data med: ', ((sum(data_1_rewards))/(len(data_1_rewards) + .00001)) / len(data_1_cycles))
-            data_fast_avg = ((sum(data_fast_rewards))/(len(data_fast_rewards) + .00001)) / len(data_fast_cycles)
-            data_slow_avg = ((sum(data_slow_rewards))/(len(data_slow_rewards) + .00001 )) / len(data_slow_cycles)
-            data_1_avg = ((sum(data_1_rewards))/ (len(data_1_rewards) + .00001)) / len(data_1_cycles)
-        '''
     mouseEnv.close() #disconnects server
 
 if __name__ == '__main__':

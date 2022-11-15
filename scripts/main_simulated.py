@@ -13,9 +13,9 @@ from env_simulated import Mouse_Env
 from SAC.replay_memory import PolicyReplayMemory
 from SAC.sac import SAC
 
-file_path = "../model_utilities/mouse_fixed.sdf" # mouse model, body fixed except for right arm
-pose_file = "../model_utilities/right_forelimb_pose_sim.yaml" # pose file for original pose
-muscle_config_file = "../model_utilities/right_forelimb.yaml" # muscle file for right arm
+file_path = "model_utilities/mouse_fixed.sdf" # mouse model, body fixed except for right arm
+pose_file = "model_utilities/right_forelimb_pose_sim.yaml" # pose file for original pose
+muscle_config_file = "model_utilities/right_forelimb.yaml" # muscle file for right arm
 
 model_offset = (0.0, 0.0, .0475) #z position modified with global scaling
 
@@ -191,11 +191,11 @@ def main():
             highest_reward = episode_reward 
 
             #pylog.debug("Saving policy and Q network")
-            #torch.save(agent.policy.state_dict(), '../models/policy_net_best_medium.pth')
-            #torch.save(agent.critic.state_dict(), '../models/value_net_best_medium.pth')
+            torch.save(agent.policy.state_dict(), 'models/policy_net_best_sim.pth')
+            torch.save(agent.critic.state_dict(), 'models/value_net_best_sim.pth')
         
-        #torch.save(agent.policy.state_dict(), '../models/policy_net_cur_medium.pth')
-        #torch.save(agent.critic.state_dict(), '../models/value_net_cur_medium.pth')
+        torch.save(agent.policy.state_dict(), 'models/policy_net_cur_sim.pth')
+        torch.save(agent.critic.state_dict(), 'models/value_net_cur_sim.pth')
 
         pylog.debug('Iteration: {} | reward with total timestep {}: {}'.format(i_episode, mouseEnv.timestep, episode_reward))
         pylog.debug('highest reward so far: {}'.format(highest_reward))
@@ -203,8 +203,8 @@ def main():
         reward_tracker.append(episode_reward)
         policy_memory.push(ep_trajectory)
 
-        #np.savetxt('../Score/rewards_medium.txt', reward_tracker)
-        #np.savetxt('../Score/policy_losses_medium.txt', policy_loss_tracker)
+        np.savetxt('Score/rewards_sim.txt', reward_tracker)
+        np.savetxt('Score/policy_losses_sim.txt', policy_loss_tracker)
 
     mouseEnv.close() #disconnects server
 
