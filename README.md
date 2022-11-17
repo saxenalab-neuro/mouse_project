@@ -19,7 +19,7 @@
 ## Simulation
 1. To begin training, enter the scripts folder and run:
     ```
-    python main.py
+    python main.py --visualize True
     ``` 
 2. To view a trained model, run:
     ```
