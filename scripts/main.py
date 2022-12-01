@@ -13,9 +13,9 @@ from Mouse_RL_Environment import Mouse_Env
 from SAC.replay_memory import PolicyReplayMemory
 from SAC.sac import SAC
 
-file_path = "model_utilities/mouse_fixed.sdf" # mouse model, body fixed except for right arm
-pose_file = "model_utilities/right_forelimb_pose.yaml" # pose file for original pose
-muscle_config_file = "model_utilities/right_forelimb.yaml" # muscle file for right arm
+file_path = "../model_utilities/mouse_fixed.sdf" # mouse model, body fixed except for right arm
+pose_file = "../model_utilities/right_forelimb_pose.yaml" # pose file for original pose
+muscle_config_file = "../model_utilities/right_forelimb.yaml" # muscle file for right arm
 
 model_offset = (0.0, 0.0, .0475) #z position modified with global scaling
 
@@ -68,7 +68,7 @@ def main():
                         help='Automaically adjust α (default: False)')
     parser.add_argument('--seed', type=int, default=123456, metavar='N',
                         help='random seed (default: 123456)')
-    parser.add_argument('--policy_batch_size', type=int, default=8, metavar='N',
+    parser.add_argument('--policy_batch_size', type=int, default=4, metavar='N',
                         help='batch size (default: 6)')
     parser.add_argument('--num_steps', type=int, default=1000001, metavar='N',
                         help='maximum number of steps (default: 1000000)')
@@ -129,7 +129,7 @@ def main():
     dataset = ['data_fast', 'data_slow', 'data_1']
 
     ########################### Data_Fast ###############################
-    mat = scipy.io.loadmat('data/kinematics_session_mean_alt_fast.mat')
+    mat = scipy.io.loadmat('../data/kinematics_session_mean_alt_fast.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_fast = data[231:401:1] * -1
     data_fast = [-13.45250312, *data_fast[8:]]
@@ -139,7 +139,7 @@ def main():
     data_fast_rewards = [0]
 
     ########################### Data_Slow ###############################
-    mat = scipy.io.loadmat('data/kinematics_session_mean_alt_slow.mat')
+    mat = scipy.io.loadmat('../data/kinematics_session_mean_alt_slow.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_slow = data[256:476:1] * -1
     mouse_slow = np.zeros_like(data_slow)
@@ -147,7 +147,7 @@ def main():
     data_slow_rewards = [0]
 
     ############################ Data_1 ##############################
-    mat = scipy.io.loadmat('data/kinematics_session_mean_alt1.mat')
+    mat = scipy.io.loadmat('../data/kinematics_session_mean_alt1.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_1= data[226:406:1] * -1
     data_1 = [-13.45250312, *data_1[4:]]
@@ -196,7 +196,7 @@ def main():
                 if args.start_steps > total_numsteps:
                     action = mouseEnv.action_space.sample()  # Sample random action
                 else:
-                    action, h_current, c_current = agent.select_action(state, h_prev, c_prev)  # Sample action from policy
+                    action, h_current, c_current, _ = agent.select_action(state, h_prev, c_prev)  # Sample action from policy
 
             action_list.append(action)
             
@@ -248,8 +248,8 @@ def main():
         reward_tracker.append(episode_reward)
         policy_memory.push(ep_trajectory)
 
-        np.savetxt('Score/rewards.txt', reward_tracker)
-        np.savetxt('Score/policy_losses.txt', policy_loss_tracker)
+        #np.savetxt('../Score/rewards.txt', reward_tracker)
+        #np.savetxt('../Score/policy_losses.txt', policy_loss_tracker)
 
     mouseEnv.close() #disconnects server
 

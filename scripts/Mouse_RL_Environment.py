@@ -47,7 +47,7 @@ class PyBulletEnv(gym.Env):
         self.pose_file = pose_file
         
         #####MUSCLES + DATA LOGGING#####
-        self.container = Container(max_iterations=int(1000000000))
+        self.container = Container(max_iterations=int(1000000))
 
         # Physics simulation to namespace
         self.sim_data = self.container.add_namespace('physics')
@@ -60,7 +60,7 @@ class PyBulletEnv(gym.Env):
         #####META PARAMETERS FOR SIMULATION#####
         self.n_fixedsteps = 0
         self._max_episode_steps = timestep #Does not matter. It is being set in the main.py where the total number of steps are being changed.
-        self.threshold_user = 0.0035
+        self.threshold_user = 0.004
         self.timestep = timestep
         self.frame_skip= frame_skip
 
@@ -68,8 +68,7 @@ class PyBulletEnv(gym.Env):
         ###x, y, z for initializing from hand starting position, target_pos for updating
         self.x_pos = [0]
         self.y_pos = p.getLinkState(self.model, 115)[0][1]
-        self.z_theta = np.linspace(0, 2*np.pi, self.timestep)
-        self.z_pos = (np.sin(self.z_theta[0]) + 11) / 500
+        self.z_pos = p.getLinkState(self.model, 115)[0][2]
 
         self.target_pos = [self.x_pos[0]/self.scale - self.offset, self.y_pos, self.z_pos]
 
@@ -100,8 +99,6 @@ class PyBulletEnv(gym.Env):
         self.container.initialize() #resets container
         self.muscles.setup_integrator() #resets muscles
         #resets target position
-        self.z_theta = np.linspace(0, 2*np.pi, self.timestep)
-        self.z_pos = (np.sin(self.z_theta[0]) + 11) / 500
         self.target_pos = [self.x_pos[0]/self.scale -self.offset, self.y_pos, self.z_pos]
         if self.use_sphere:
             p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
@@ -176,7 +173,7 @@ class Mouse_Env(PyBulletEnv):
             return True
 
     def update_target_pos(self):
-        self.target_pos = [self.x_pos[(self.istep-1)]/self.scale-self.offset, self.y_pos, ((np.sin(self.z_theta[self.istep-1])+11)/500)]
+        self.target_pos = [self.x_pos[(self.istep-1)]/self.scale-self.offset, self.y_pos, self.z_pos]
 
         if self.use_sphere:
             p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
@@ -250,16 +247,16 @@ class Mouse_Env(PyBulletEnv):
         self.controller_to_actuator(forces)
 
         #can edit threshold with episodes
-        self.threshold_x = .0035
-        self.threshold_y = .0035
-        self.threshold_z = .0035
+        self.threshold_x = .004
+        self.threshold_y = .004
+        self.threshold_z = .004
 
         self.do_simulation()
 
         act = self.get_activations()
         reward, distances = self.get_reward()
         cost = self.get_cost(forces)
-        final_reward= (5*reward) - (.5*cost)
+        final_reward= (5*reward) - (2*cost)
 
         done = self.is_done()
         

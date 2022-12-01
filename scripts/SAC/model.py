@@ -230,8 +230,8 @@ class GaussianPolicyLSTM(nn.Module):
         # Pass none action space and adjust the action scale and bias manually
         if action_space is None:
             # Try different scales to see what works best
-            self.action_scale = torch.tensor(0.5)
-            self.action_bias = torch.tensor(0.5)
+            self.action_scale = torch.tensor(0.3)
+            self.action_bias = torch.tensor(0.3)
         else:
             self.action_scale = torch.FloatTensor(
                 (action_space.high - action_space.low) / 2.)
@@ -256,11 +256,11 @@ class GaussianPolicyLSTM(nn.Module):
         log_std = self.log_std_linear(x)
         log_std = torch.clamp(log_std, min=LOG_SIG_MIN, max=LOG_SIG_MAX)
 
-        return mean, log_std, h_current, c_current
+        return mean, log_std, h_current, c_current, lstm_branch
 
     def sample(self, state, h_prev, c_prev, sampling):
 
-        mean, log_std, h_current, c_current = self.forward(state, h_prev, c_prev, sampling)
+        mean, log_std, h_current, c_current, lstm_out = self.forward(state, h_prev, c_prev, sampling)
         #if sampling == False; then reshape mean and log_std from (B, L_max, A) to (B*Lmax, A)
 
         mean_size = mean.size()
@@ -285,7 +285,7 @@ class GaussianPolicyLSTM(nn.Module):
             mean = mean.reshape(mean_size[0], mean_size[1], mean_size[2])
             log_prob = log_prob.reshape(log_std_size[0], log_std_size[1], 1) 
 
-        return action, log_prob, mean, h_current, c_current
+        return action, log_prob, mean, h_current, c_current, lstm_out
     
     def to(self, device):
         self.action_scale = self.action_scale.to(device)
