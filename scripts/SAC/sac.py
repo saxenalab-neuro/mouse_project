@@ -51,10 +51,10 @@ class SAC(object):
         c_prev = c_prev.to(self.device)
         
         if evaluate is False:
-            action, _, _, h_current, c_current = self.policy.sample(state, h_prev, c_prev, sampling= True)
+            action, _, _, h_current, c_current, lstm_out = self.policy.sample(state, h_prev, c_prev, sampling= True)
         else:
-            _, _, action, h_current, c_current = self.policy.sample(state, h_prev, c_prev, sampling= True)
-        return action.detach().cpu().numpy()[0], h_current.detach(), c_current.detach()
+            _, _, action, h_current, c_current, lstm_out = self.policy.sample(state, h_prev, c_prev, sampling= True)
+        return action.detach().cpu().numpy()[0], h_current.detach(), c_current.detach(), lstm_out.detach().cpu().numpy()
 
     def update_parameters(self, policy_memory, policy_batch_size, updates):
         # Sample a batch from memory
@@ -92,7 +92,7 @@ class SAC(object):
         # batch_p stands for padded batch or tensor of size (B, L_max, H)
         with torch.no_grad():
 
-            next_state_action_p, next_state_log_pi_p, _, _, _ = self.policy.sample(next_state_batch, h_prev=hidden_out[0], c_prev= hidden_out[1], sampling= False)
+            next_state_action_p, next_state_log_pi_p, _, _, _, _ = self.policy.sample(next_state_batch, h_prev=hidden_out[0], c_prev= hidden_out[1], sampling= False)
             next_state_state_action_p = torch.cat((next_state_batch_p, next_state_action_p), dim=2)
             next_state_state_action = pack_padded_sequence(next_state_state_action_p, seq_lengths, batch_first= True, enforce_sorted= False)
 
@@ -122,7 +122,7 @@ class SAC(object):
 
         # Update the policy network using the newly proposed method
 
-        pi_action_bat_p, log_prob_bat_p, _, _, _ = self.policy.sample(state_batch, h_prev= hidden_in[0], c_prev= hidden_in[1], sampling= False)
+        pi_action_bat_p, log_prob_bat_p, _, _, _, _ = self.policy.sample(state_batch, h_prev= hidden_in[0], c_prev= hidden_in[1], sampling= False)
 
         pi_state_action_batch_p = torch.cat((state_batch_p, pi_action_bat_p), dim=2)
         pi_state_action_batch = pack_padded_sequence(pi_state_action_batch_p, seq_lengths, batch_first= True, enforce_sorted= False)
