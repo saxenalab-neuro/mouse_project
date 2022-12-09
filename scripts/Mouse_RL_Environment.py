@@ -39,6 +39,7 @@ class PyBulletEnv(gym.Env):
         self.joint_id = {}
         self.link_id = {}
         self.joint_type = {}
+        self.activations = []
 
         if self.use_sphere:
             self.sphere = p.loadURDF("sphere_small.urdf", globalScaling=.1) #visualizes target position
@@ -60,7 +61,7 @@ class PyBulletEnv(gym.Env):
         #####META PARAMETERS FOR SIMULATION#####
         self.n_fixedsteps = 0
         self._max_episode_steps = timestep #Does not matter. It is being set in the main.py where the total number of steps are being changed.
-        self.threshold_user = 0.004
+        self.threshold_user = 0.00365
         self.timestep = timestep
         self.frame_skip= frame_skip
 
@@ -94,6 +95,7 @@ class PyBulletEnv(gym.Env):
 
     def reset(self, pose_file):
         self.istep = 0
+        self.activations = []
         model_utils.disable_control(self.model) #disables torque/position
         self.reset_model(pose_file) #resets model position
         self.container.initialize() #resets container
@@ -139,6 +141,10 @@ class Mouse_Env(PyBulletEnv):
         cost = scaler * np.sum(np.abs(forces))
         return cost
 
+    def oscillation_cost(self):
+        cost = sum([(x-y)**2 for x, y in zip(self.activations[0], self.activations[1])])
+        return cost
+
     def get_reward(self): 
         hand_pos = p.getLinkState(self.model, 115)[0] #(x, y, z)
 
@@ -152,9 +158,9 @@ class Mouse_Env(PyBulletEnv):
             reward = -5
         
         else:
-            r_x= 1/(2500**d_x)
-            r_y= 1/(2500**d_y)
-            r_z= 1/(2500**d_z)
+            r_x= 1/(3000**d_x)
+            r_y= 1/(3000**d_y)
+            r_z= 1/(3000**d_z)
 
             reward= r_x + r_y + r_z
 
@@ -241,22 +247,30 @@ class Mouse_Env(PyBulletEnv):
 
         return activations
 
-    def step(self, forces, i_episode):
+    def step(self, forces, timestep):
         self.istep += 1
 
         self.controller_to_actuator(forces)
 
         #can edit threshold with episodes
-        self.threshold_x = .004
-        self.threshold_y = .004
-        self.threshold_z = .004
+        self.threshold_x = .00365
+        self.threshold_y = .00365
+        self.threshold_z = .00365
 
         self.do_simulation()
 
         act = self.get_activations()
+
+        if timestep < 2:
+            self.activations.append(act)
+            oscillation_cost = 0
+        else:
+            self.activations[timestep % 2] = act
+            oscillation_cost = self.oscillation_cost()
+             
         reward, distances = self.get_reward()
         cost = self.get_cost(forces)
-        final_reward= (5*reward) - (2*cost)
+        final_reward= (5*reward) - (5*cost) - oscillation_cost 
 
         done = self.is_done()
         
