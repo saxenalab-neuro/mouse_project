@@ -34,12 +34,13 @@ class PyBulletEnv(gym.Env):
         p.resetBasePositionAndOrientation(self.model, self.model_offset, p.getQuaternionFromEuler([0, 0, 80.2])) #resets model position
         self.use_sphere = False
         self.scale = 21
-        self.offset = -.71
+        self.offset = -.712
         self.muscle_config_file = muscle_config_file
         self.joint_id = {}
         self.link_id = {}
         self.joint_type = {}
         self.activations = []
+        self.hand_positions = []
 
         if self.use_sphere:
             self.sphere = p.loadURDF("sphere_small.urdf", globalScaling=.1) #visualizes target position
@@ -48,7 +49,7 @@ class PyBulletEnv(gym.Env):
         self.pose_file = pose_file
         
         #####MUSCLES + DATA LOGGING#####
-        self.container = Container(max_iterations=int(1000000))
+        self.container = Container(max_iterations=int(10000000))
 
         # Physics simulation to namespace
         self.sim_data = self.container.add_namespace('physics')
@@ -96,6 +97,7 @@ class PyBulletEnv(gym.Env):
     def reset(self, pose_file):
         self.istep = 0
         self.activations = []
+        self.hand_positions = []
         model_utils.disable_control(self.model) #disables torque/position
         self.reset_model(pose_file) #resets model position
         self.container.initialize() #resets container
@@ -144,6 +146,20 @@ class Mouse_Env(PyBulletEnv):
     def oscillation_cost(self):
         cost = sum([(x-y)**2 for x, y in zip(self.activations[0], self.activations[1])])
         return cost
+
+    def sim_cost(self):
+        # directional vectors of the movement of hand
+        first_vec = self.hand_positions[0] - self.hand_positions[1]
+        second_vec = self.hand_positions[1] - self.hand_positions[2]
+        # get norm of directional vectors
+        first_vec_norm = np.sqrt((first_vec[0]**2) + (first_vec[1]**2) + (first_vec[2]**2))
+        second_vec_norm = np.sqrt((second_vec[0]**2) + (second_vec[1]**2) + (second_vec[2]**2))
+        # inner product of directional vectors
+        inner_product = (first_vec[0] * second_vec[0]) + (first_vec[1] * second_vec[1]) + (first_vec[2] * second_vec[2])
+        # cosine similarity to determine the similarity between their direction
+        cosine_similarity = inner_product / (first_vec_norm * second_vec_norm)
+
+        return cosine_similarity
 
     def get_reward(self): 
         hand_pos = p.getLinkState(self.model, 115)[0] #(x, y, z)
@@ -255,22 +271,33 @@ class Mouse_Env(PyBulletEnv):
         #can edit threshold with episodes
         self.threshold_x = .00365
         self.threshold_y = .00365
-        self.threshold_z = .00365
+        self.threshold_z = .004
 
         self.do_simulation()
 
         act = self.get_activations()
 
+        # oscillation cost (MSE of activity)
         if timestep < 2:
             self.activations.append(act)
             oscillation_cost = 0
         else:
-            self.activations[timestep % 2] = act
+            self.activations.pop(0)
+            self.activations.append(act)
             oscillation_cost = self.oscillation_cost()
+
+        # cosine similarity loss (cosine similarity of hand positions)
+        if timestep < 3:
+            self.hand_positions.append(np.array(p.getLinkState(self.model, 115)[0]))
+            similarity_cost = 0
+        else:
+            self.hand_positions.pop(0)
+            self.hand_positions.append(np.array(p.getLinkState(self.model, 115)[0]))
+            similarity_cost = self.sim_cost()
              
         reward, distances = self.get_reward()
         cost = self.get_cost(forces)
-        final_reward= (5*reward) - (5*cost) - oscillation_cost 
+        final_reward= (5*reward) - (cost) - (oscillation_cost) + (3*similarity_cost)
 
         done = self.is_done()
         
