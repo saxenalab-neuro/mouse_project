@@ -29,18 +29,19 @@ class PyBulletEnv(gym.Env):
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0,0,-9.81) #normal gravity
         self.plane = p.loadURDF("plane.urdf") #sets floor
-        self.model = p.loadSDF(model_path)[0]#resizes, loads model, returns model id
+        self.model = p.loadSDF(model_path)[0] #resizes, loads model, returns model id
         self.model_offset = model_offset
         p.resetBasePositionAndOrientation(self.model, self.model_offset, p.getQuaternionFromEuler([0, 0, 80.2])) #resets model position
         self.use_sphere = False
-        self.scale = 21
-        self.offset = -.712
+        self.scale = 21 # was 21, new 21
+        self.offset = -.713 # was -.71177, new -.713
         self.muscle_config_file = muscle_config_file
         self.joint_id = {}
         self.link_id = {}
         self.joint_type = {}
         self.activations = []
         self.hand_positions = []
+        self.forces_scale = .5
 
         if self.use_sphere:
             self.sphere = p.loadURDF("sphere_small.urdf", globalScaling=.1) #visualizes target position
@@ -62,7 +63,7 @@ class PyBulletEnv(gym.Env):
         #####META PARAMETERS FOR SIMULATION#####
         self.n_fixedsteps = 0
         self._max_episode_steps = timestep #Does not matter. It is being set in the main.py where the total number of steps are being changed.
-        self.threshold_user = 0.00365
+        self.threshold_user = 0.0035
         self.timestep = timestep
         self.frame_skip= frame_skip
 
@@ -72,7 +73,7 @@ class PyBulletEnv(gym.Env):
         self.y_pos = p.getLinkState(self.model, 115)[0][1]
         self.z_pos = p.getLinkState(self.model, 115)[0][2]
 
-        self.target_pos = [self.x_pos[0]/self.scale - self.offset, self.y_pos, self.z_pos]
+        self.target_pos = [self.x_pos[0] - self.offset, self.y_pos, self.z_pos]
 
         if self.use_sphere:
             p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
@@ -103,14 +104,15 @@ class PyBulletEnv(gym.Env):
         self.container.initialize() #resets container
         self.muscles.setup_integrator() #resets muscles
         #resets target position
-        self.target_pos = [self.x_pos[0]/self.scale -self.offset, self.y_pos, self.z_pos]
+        self.target_pos = np.array([self.x_pos[0] / self.scale - self.offset, self.y_pos, self.z_pos])
+        self.orig_target_pos = np.array([self.x_pos[0] / self.scale - self.offset, self.y_pos, self.z_pos])
         if self.use_sphere:
             p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
         
         self.threshold_x = self.threshold_user #resets threshold
         self.threshold_y = self.threshold_user
         self.threshold_z = self.threshold_user
-    
+
     def initialize_muscles(self):
         self.muscles = MusculoSkeletalSystem(self.container, 1e-3, self.muscle_config_file)
 
@@ -162,7 +164,7 @@ class Mouse_Env(PyBulletEnv):
         return cosine_similarity
 
     def get_reward(self): 
-        hand_pos = p.getLinkState(self.model, 115)[0] #(x, y, z)
+        hand_pos = p.getLinkState(self.model, 115, computeForwardKinematics=True)[0] #(x, y, z)
 
         d_x = np.abs(hand_pos[0] - self.target_pos[0])
         d_y = np.abs(hand_pos[1] - self.target_pos[1])
@@ -171,19 +173,19 @@ class Mouse_Env(PyBulletEnv):
         distances = [d_x, d_y, d_z]
 
         if d_x > self.threshold_x or d_y > self.threshold_y or d_z > self.threshold_z:
-            reward = -5
+            reward = -10
         
         else:
-            r_x= 1/(3000**d_x)
-            r_y= 1/(3000**d_y)
-            r_z= 1/(3000**d_z)
+            r_x= 1/(2500**d_x)
+            r_y= 1/(2500**d_y)
+            r_z= 1/(2500**d_z)
 
             reward= r_x + r_y + r_z
 
         return reward, distances
 
     def is_done(self):
-        hand_pos =  np.array(p.getLinkState(self.model, 115)[0]) #(x, y, z)
+        hand_pos =  np.array(p.getLinkState(self.model, 115, computeForwardKinematics=True)[0]) #(x, y, z)
         criteria = hand_pos - self.target_pos
 
         if self.istep < self.timestep:
@@ -195,7 +197,7 @@ class Mouse_Env(PyBulletEnv):
             return True
 
     def update_target_pos(self):
-        self.target_pos = [self.x_pos[(self.istep-1)]/self.scale-self.offset, self.y_pos, self.z_pos]
+        self.target_pos = np.array([self.x_pos[(self.istep)]/self.scale-self.offset, self.y_pos, self.z_pos])
 
         if self.use_sphere:
             p.resetBasePositionAndOrientation(self.sphere, np.array(self.target_pos), p.getQuaternionFromEuler([0, 0, 80.2]))
@@ -206,17 +208,19 @@ class Mouse_Env(PyBulletEnv):
         for i in range(len(self.ctrl)):
             joint_positions.append(p.getJointState(self.model, self.ctrl[i])[0])
             joint_velocities.append(p.getJointState(self.model, self.ctrl[i])[1]/100)
+        joint_positions = [*list(np.array(joint_positions)), *list(p.getLinkState(self.model, 115, computeForwardKinematics=True)[0])] #(x, y, z)
+        joint_velocities = [*list(np.array(joint_velocities)), *list(p.getLinkState(self.model, 115, computeForwardKinematics=True, computeLinkVelocity=True)[6])]
         return joint_positions, joint_velocities
 
-    def update_state(self, act, joint_positions, joint_velocities, target_velocity, distances):
-        state = [*list(act), *list(joint_positions), *list(joint_velocities), *list(self.target_pos), *list(target_velocity), *list(distances)]
-        return state
-
-    def get_cur_state(self):
+    def get_cur_state(self, data_curr):
 
         joint_positions, _ = self.get_joint_positions_and_velocities()
         _, distance = self.get_reward()
-        return [*list(self.get_activations()), *list(joint_positions), *[0., 0., 0., 0., 0., 0., 0.], *list(self.target_pos), *[0, 0, 0], *distance]
+        return [*list(np.array(self.get_activations())), *list(np.array(joint_positions)), *[0., 0., 0., 0., 0., 0., 0., 0., 0., 0.], *list(np.array(self.target_pos)), *[0., 0., 0.], *list(np.array(distance))]
+
+    def update_state(self, act, joint_positions, joint_velocities, target_pos, target_velocity, distances):
+        state = [*list(np.array(act)), *list(np.array(joint_positions)), *list(np.array(joint_velocities)), *list(np.array(target_pos)), *list(np.array(target_velocity)), *list(np.array(distances))]
+        return state
     
     def controller_to_actuator(self, forces):
 
@@ -263,51 +267,36 @@ class Mouse_Env(PyBulletEnv):
 
         return activations
 
-    def step(self, forces, timestep):
-        self.istep += 1
+    def step(self, forces, timestep, data_curr):
 
+        if timestep < (self._max_episode_steps-1):
+            self.istep += 1
+
+        prev_target = self.target_pos
+        self.update_target_pos()
+        curr_target = self.target_pos
+        
         self.controller_to_actuator(forces)
 
         #can edit threshold with episodes
-        self.threshold_x = .00365
-        self.threshold_y = .00365
-        self.threshold_z = .004
+        self.threshold_x = .0035
+        self.threshold_y = .0035
+        self.threshold_z = .0035
 
         self.do_simulation()
 
         act = self.get_activations()
 
-        # oscillation cost (MSE of activity)
-        if timestep < 2:
-            self.activations.append(act)
-            oscillation_cost = 0
-        else:
-            self.activations.pop(0)
-            self.activations.append(act)
-            oscillation_cost = self.oscillation_cost()
-
-        # cosine similarity loss (cosine similarity of hand positions)
-        if timestep < 3:
-            self.hand_positions.append(np.array(p.getLinkState(self.model, 115)[0]))
-            similarity_cost = 0
-        else:
-            self.hand_positions.pop(0)
-            self.hand_positions.append(np.array(p.getLinkState(self.model, 115)[0]))
-            similarity_cost = self.sim_cost()
-             
         reward, distances = self.get_reward()
         cost = self.get_cost(forces)
-        final_reward= (5*reward) - (cost) - (oscillation_cost) + (3*similarity_cost)
+        final_reward= (5*reward) - (self.forces_scale*cost) 
 
         done = self.is_done()
         
-        prev_target = np.array(self.target_pos)
-        self.update_target_pos()
-        curr_target = np.array(self.target_pos)
+        target_vel = (curr_target - prev_target) / .001
 
-        target_vel = (curr_target - prev_target) / (.001) #need clarification about dt
         joint_positions, joint_velocities = self.get_joint_positions_and_velocities()
 
-        state = self.update_state(act, joint_positions, joint_velocities, target_vel, distances)
+        state = self.update_state(act, joint_positions, joint_velocities, curr_target, target_vel, distances)
 
         return state, final_reward, done
