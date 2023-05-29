@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import scipy
 from scipy import signal
+import scipy.io
 import argparse
 
 plt.rcParams.update({'font.size': 14})
@@ -10,25 +11,27 @@ plt.rcParams.update({'font.size': 14})
 def main():
 
     parser = argparse.ArgumentParser(description='PyTorch Soft Actor-Critic Args')
-    parser.add_argument('--plot', default="kinematics",
+    parser.add_argument('--plot', type=str, default="kinematics",
                         help='kinematics, sim_x, sim_y, med')
+
     args = parser.parse_args()
 
-    b_1, a_1 = signal.butter(10, 20, fs=177, btype='lowpass')
-    b_fast, a_fast = signal.butter(10, 20, fs=163, btype='lowpass')
-    b_slow, a_slow= signal.butter(10, 20, fs=220, btype='lowpass')
+    #b_1, a_1 = signal.butter(10, 20, fs=177, btype='lowpass')
+    #b_fast, a_fast = signal.butter(10, 20, fs=163, btype='lowpass')
+    #b_slow, a_slow= signal.butter(10, 20, fs=220, btype='lowpass')
 
     data_1_kinematics = np.loadtxt('mouse_1.txt')
     data_fast_kinematics = np.loadtxt('mouse_fast.txt')
     data_slow_kinematics = np.loadtxt('mouse_slow.txt')
 
-    medium_kinematics = np.loadtxt('mouse_med.txt')
+    #medium_kinematics = np.loadtxt('mouse_med.txt')
 
-    filtered_1 = signal.filtfilt(b_1, a_1, data_1_kinematics)
-    filtered_med = signal.filtfilt(b_1, a_1, medium_kinematics)
-    filtered_fast = signal.filtfilt(b_fast, a_fast, data_fast_kinematics)
-    filtered_slow = signal.filtfilt(b_slow, a_slow, data_slow_kinematics)
+    #filtered_1 = signal.filtfilt(b_1, a_1, data_1_kinematics)
+    #filtered_med = signal.filtfilt(b_1, a_1, medium_kinematics)
+    #filtered_fast = signal.filtfilt(b_fast, a_fast, data_fast_kinematics)
+    #filtered_slow = signal.filtfilt(b_slow, a_slow, data_slow_kinematics)
 
+    '''
     b_150, a_150 = signal.butter(10, 20, fs=150, btype='lowpass')
     b_200, a_200 = signal.butter(10, 20, fs=200, btype='lowpass')
     b_250, a_250 = signal.butter(10, 20, fs=250, btype='lowpass')
@@ -47,6 +50,7 @@ def main():
     filtered_x_sim_250 = signal.filtfilt(b_250, a_250, mouse_x_sim_250)
     mouse_y_sim_250 = np.loadtxt('mouse_250_y.txt')
     filtered_y_sim_250 = signal.filtfilt(b_250, a_250, mouse_y_sim_250)
+    '''
 
     ##################### DATA FAST ############################
     mat = scipy.io.loadmat('../data/kinematics_session_mean_alt_fast.mat')
@@ -89,31 +93,40 @@ def main():
 
     if args.plot == 'kinematics':
 
+        fast_mse = (np.sum((data_fast - data_fast_kinematics)**2)) / 163
+        slow_mse = (np.sum((data_slow - data_slow_kinematics)**2)) / 220
+        med_mse = (np.sum((data_1 - data_1_kinematics)**2)) / 177
+
+        print('Difference from target trajectory fast (MSE): {}'.format(fast_mse))
+        print('Difference from target trajectory slow (MSE): {}'.format(slow_mse))
+        print('Difference from target trajectory med (MSE): {}'.format(med_mse))
+
         # Plot the kinematics (currently for simulated)
-        plt.plot(data_fast + .015, label='Experimental', linewidth=4, color='orange')
-        plt.plot(filtered_fast + .015, label='Model Output', linewidth=4, linestyle='dashed', color='black')
+        plt.plot(data_fast + .02, label='Experimental', linewidth=4, color='orange')
+        plt.plot(data_fast_kinematics + .02, label='Model Output', linewidth=4, linestyle='dashed', color='black')
 
         plt.plot(data_1, linewidth=4, color='orange')
-        plt.plot(filtered_1, linewidth=4, color='black', linestyle='dashed')
+        plt.plot(data_1_kinematics, linewidth=4, color='black', linestyle='dashed')
 
-        plt.plot(data_slow - .015, linewidth=4, color='orange')
-        plt.plot(filtered_slow - .015, linewidth=4, linestyle='dashed', color='black')
+        plt.plot(data_slow - .02, linewidth=4, color='orange')
+        plt.plot(data_slow_kinematics - .02, linewidth=4, linestyle='dashed', color='black')
 
         plt.legend()
         plt.xlabel('Time (s)')
         plt.ylabel('Position')
         plt.yticks([])
         plt.savefig('data_all_kinematics_plot.png')
+        plt.show()
 
     elif args.plot == 'x_sim':
 
-        plt.plot(x_sim_150 + .015, label='Simulated', linewidth=4, color='orange')
+        plt.plot(x_sim_150 + .02, label='Simulated', linewidth=4, color='orange')
         plt.plot(filtered_x_sim_150 + .015, label='Model Output', linewidth=4, color='black', linestyle='dashed')
 
         plt.plot(x_sim_200, linewidth=4, color='orange')
         plt.plot(filtered_x_sim_200, linewidth=4, color='black', linestyle='dashed')
 
-        plt.plot(x_sim_250 - .015, linewidth=4, color='orange')
+        plt.plot(x_sim_250 - .02, linewidth=4, color='orange')
         plt.plot(filtered_x_sim_250 - .015, linewidth=4, color='black', linestyle='dashed')
 
         plt.legend()

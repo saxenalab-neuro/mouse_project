@@ -68,7 +68,7 @@ def main():
                         help='Automaically adjust α (default: False)')
     parser.add_argument('--seed', type=int, default=123456, metavar='N',
                         help='random seed (default: 123456)')
-    parser.add_argument('--policy_batch_size', type=int, default=4, metavar='N',
+    parser.add_argument('--policy_batch_size', type=int, default=8, metavar='N',
                         help='batch size (default: 6)')
     parser.add_argument('--num_steps', type=int, default=1000001, metavar='N',
                         help='maximum number of steps (default: 1000000)')
@@ -95,7 +95,7 @@ def main():
 
     ### CREATE ENVIRONMENT, AGENT, MEMORY ###
     mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset, args.visualize)
-    agent = SAC(41, mouseEnv.action_space, args)
+    agent = SAC(47, mouseEnv.action_space, args)
     policy_memory= PolicyReplayMemory(args.policy_replay_size, args.seed)
 
     torch.manual_seed(args.seed)
@@ -170,20 +170,23 @@ def main():
         ### DATA SELECTION BY AVERAGE PERFORMANCE ###
         if i_episode % 3 == 0:
             mouseEnv.timestep = len(data_fast)
+            mouseEnv._max_episode_steps = len(data_fast)
             mouseEnv.x_pos = data_fast
             data_curr = dataset[0]
         elif i_episode % 3 == 1:
             mouseEnv.timestep =  len(data_slow)
+            mouseEnv._max_episode_steps = len(data_slow)
             mouseEnv.x_pos = data_slow
             data_curr = dataset[1]
         elif i_episode % 3 == 2:
             mouseEnv.timestep = len(data_1)
+            mouseEnv._max_episode_steps = len(data_1)
             mouseEnv.x_pos = data_1
             data_curr = dataset[2]
  
         ### GET INITAL STATE + RESET MODEL BY POSE
         mouseEnv.reset(pose_file)
-        state = mouseEnv.get_cur_state()
+        state = mouseEnv.get_cur_state(data_curr)
         ep_trajectory = []
 
         #num_layers specified in the policy model 
@@ -192,6 +195,7 @@ def main():
 
         ### STEPS PER EPISODE ###
         for i in range(mouseEnv.timestep):
+            
             with torch.no_grad():
                 if args.start_steps > total_numsteps:
                     action = mouseEnv.action_space.sample()  # Sample random action
@@ -203,14 +207,14 @@ def main():
             ### SIMULATION ###
             if len(policy_memory.buffer) > args.policy_batch_size:
                 # Number of updates per step in environment
-                for i in range(args.updates_per_step):
+                for j in range(args.updates_per_step):
                     # Update parameters of all the networks
                     critic_1_loss, critic_2_loss, policy_loss, ent_loss, alpha = agent.update_parameters(policy_memory, args.policy_batch_size, updates)
                     policy_loss_tracker.append(policy_loss)
                     updates += 1
 
             ### TRACKING REWARD + EXPERIENCE TUPLE###
-            next_state, reward, done = mouseEnv.step(action, i_episode)
+            next_state, reward, done = mouseEnv.step(action, i, data_curr)
             episode_reward += reward
 
             mask = 1 if episode_steps == mouseEnv._max_episode_steps else float(not done)
@@ -236,16 +240,16 @@ def main():
             highest_reward = episode_reward 
 
             #pylog.debug("Saving policy and Q network")
-            #torch.save(agent.policy.state_dict(), 'models/policy_net_best.pth')
-            #torch.save(agent.critic.state_dict(), 'models/value_net_best.pth')
+            #torch.save(agent.policy.state_dict(), '../models/policy_net_cost10_best.pth')
+            #torch.save(agent.critic.state_dict(), '../models/value_net_cost10_best.pth')
         
-        #torch.save(agent.policy.state_dict(), 'models/policy_net_cur.pth')
-        #torch.save(agent.critic.state_dict(), 'models/value_net_cur.pth')
+        #torch.save(agent.policy.state_dict(), '../models/policy_net_cost10_cur.pth')
+        #torch.save(agent.critic.state_dict(), '../models/value_net_cost10_cur.pth')
 
-        pylog.debug('Iteration: {} | reward with total timestep {}: {}'.format(i_episode, mouseEnv.timestep, episode_reward))
+        pylog.debug('Iteration: {} | reward with total timestep {}: {}, timesteps completed: {}'.format(i_episode, mouseEnv.timestep, episode_reward, episode_steps))
         pylog.debug('highest reward so far: {}'.format(highest_reward))
 
-        reward_tracker.append(episode_reward)
+        #reward_tracker.append(episode_reward)
         policy_memory.push(ep_trajectory)
 
         #np.savetxt('../Score/rewards.txt', reward_tracker)

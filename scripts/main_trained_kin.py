@@ -59,7 +59,7 @@ def main():
                         help='discount factor for reward (default: 0.99)')
     parser.add_argument('--tau', type=float, default=0.005, metavar='G',
                         help='target smoothing coefficient(τ) (default: 0.005)')
-    parser.add_argument('--lr', type=float, default=0.0005, metavar='G',
+    parser.add_argument('--lr', type=float, default=0.001, metavar='G',
                         help='learning rate (default: 0.001)')
     parser.add_argument('--alpha', type=float, default=0.2, metavar='G',
                         help='Temperature parameter α determines the relative importance of the entropy\
@@ -95,11 +95,10 @@ def main():
 
     ### CREATE ENVIRONMENT, AGENT, MEMORY ###
     mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset, args.visualize)
-    agent = SAC(41, mouseEnv.action_space, args)
-    policy_memory= PolicyReplayMemory(args.policy_replay_size, args.seed)
+    agent = SAC(47, mouseEnv.action_space, args)
 
-    agent.critic.load_state_dict(torch.load('../models/value_net_cur.pth'))
-    agent.policy.load_state_dict(torch.load('../models/policy_net_cur.pth'))
+    agent.critic.load_state_dict(torch.load('../models/value_net_cost.5_newpos26.pth'))
+    agent.policy.load_state_dict(torch.load('../models/policy_net_cost.5_newpos26.pth'))
 
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
@@ -147,9 +146,9 @@ def main():
     data_1_avg = 0
     data_1_rewards = [0]
 
-    highest_reward_1 = 0
-    highest_reward_fast = 0
-    highest_reward_slow = 0
+    highest_reward_1 = -100000000
+    highest_reward_fast = -1000000000
+    highest_reward_slow = -1000000000
 
     ### BEGIN TRAINING LOOP
     for i_episode in itertools.count(1):
@@ -159,6 +158,7 @@ def main():
         episode_reward_slow = 0
 
         x_kinematics = []
+        lstm_activity = []
 
         ### INITALIZE SIM PARAMETERS ###
         episode_reward = 0
@@ -169,20 +169,23 @@ def main():
         ### DATA SELECTION BY AVERAGE PERFORMANCE ###
         if i_episode % 3 == 0:
             mouseEnv.timestep = len(data_fast)
+            mouseEnv._max_episode_steps = len(data_fast)
             mouseEnv.x_pos = data_fast
             data_curr = dataset[0]
         elif i_episode % 3 == 1:
             mouseEnv.timestep =  len(data_slow)
+            mouseEnv._max_episode_steps = len(data_slow)
             mouseEnv.x_pos = data_slow
             data_curr = dataset[1]
         elif i_episode % 3 == 2:
             mouseEnv.timestep = len(data_1)
+            mouseEnv._max_episode_steps = len(data_1)
             mouseEnv.x_pos = data_1
             data_curr = dataset[2]
- 
+
         ### GET INITAL STATE + RESET MODEL BY POSE
         mouseEnv.reset(pose_file)
-        state = mouseEnv.get_cur_state()
+        state = mouseEnv.get_cur_state(data_curr)
         ep_trajectory = []
 
         #num_layers specified in the policy model 
@@ -199,12 +202,14 @@ def main():
                 if args.start_steps > total_numsteps:
                     action = mouseEnv.action_space.sample()  # Sample random action
                 else:
-                    action, h_current, c_current = agent.select_action(state, h_prev, c_prev)  # Sample action from policy
+                    action, h_current, c_current, lstm_out = agent.select_action(state, h_prev, c_prev)  # Sample action from policy
+                    lstm_out = np.squeeze(lstm_out, axis=0)
+                    lstm_activity.append(lstm_out)
 
             action_list.append(action)
             
             ### TRACKING REWARD + EXPERIENCE TUPLE###
-            next_state, reward, done = mouseEnv.step(action, i_episode)
+            next_state, reward, done = mouseEnv.step(action, i, data_curr)
             episode_reward += reward
 
             if data_curr == 'data_1':
@@ -213,13 +218,6 @@ def main():
                 episode_reward_slow += reward
             elif data_curr == 'data_fast':
                 episode_reward_fast += reward
-
-            mask = 1 if episode_steps == mouseEnv._max_episode_steps else float(not done)
-
-            if episode_steps == 0:
-                ep_trajectory.append((state, action, np.array([reward]), next_state, np.array([mask]), h_prev, c_prev, h_current, c_current))
-            else:
-                ep_trajectory.append((state, action, np.array([reward]), next_state, np.array([mask])))
 
             state = next_state
             h_prev = h_current
@@ -234,20 +232,29 @@ def main():
         
         if episode_reward_1 > highest_reward_1 and data_curr == 'data_1':
                 x_kinematics = np.array(x_kinematics)
+                lstm_activity = np.concatenate(lstm_activity, axis=0)
+                print(episode_reward_1)
                 np.savetxt('mouse_1.txt', x_kinematics)
+                np.savetxt('mouse_1_activity.txt', lstm_activity)
                 highest_reward_1 = episode_reward_1
 
         elif episode_reward_slow > highest_reward_slow and data_curr == 'data_slow':
                 x_kinematics = np.array(x_kinematics)
+                lstm_activity = np.concatenate(lstm_activity, axis=0)
+                print(episode_reward_slow)
                 np.savetxt('mouse_slow.txt', x_kinematics)
+                np.savetxt('mouse_slow_activity.txt', lstm_activity)
                 highest_reward_slow = episode_reward_slow
 
         elif episode_reward_fast > highest_reward_fast and data_curr == 'data_fast':
                 x_kinematics = np.array(x_kinematics)
+                lstm_activity = np.concatenate(lstm_activity, axis=0)
+                print(episode_reward_fast)
                 np.savetxt('mouse_fast.txt', x_kinematics)
+                np.savetxt('mouse_fast_activity.txt', lstm_activity)
                 highest_reward_fast = episode_reward_fast
         
-        pylog.debug('Iteration: {} | reward with total timestep {}: {}'.format(i_episode, mouseEnv.timestep, episode_reward))
+        pylog.debug('Iteration: {} | reward with total timestep {}: {}, iterations completed: {}'.format(i_episode, mouseEnv.timestep, episode_reward, episode_steps))
         pylog.debug('highest reward so far: {}'.format(highest_reward))
 
     mouseEnv.close() #disconnects server

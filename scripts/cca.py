@@ -34,6 +34,7 @@ def main():
 
     agent_fast = np.loadtxt('mouse_fast_activity.txt')
     agent_fast = agent_fast[1:]
+    # Test the magnitudes between the one that works well and the one that doesnt
 
     #Now do the CCA
     if args.speed == 'med':
@@ -45,7 +46,6 @@ def main():
     elif args.speed == 'slow':
         A_exp = exp_alt_slow
         A_agent = agent_slow
-    
 
     # PC_agent = PCA(n_components= 10)
     PC_exp = PCA(n_components= 10)
@@ -76,8 +76,6 @@ def main():
         plt.ylabel('Reconstructed M1 Population Activity', fontsize=16)
         plt.xticks([0, 163], ['0', '0.5'], size= 14)
         plt.yticks([])
-        # plt.legend()
-        # plt.savefig('/Users/malmani/Creative Cloud Files/Fig3/CCA_619.svg', format='svg', dpi=300, transparent= True)
         plt.savefig('cca_1.png')
 
     elif args.speed == 'fast':
@@ -85,8 +83,6 @@ def main():
         plt.ylabel('Reconstructed M1 Population Activity', fontsize=16)
         plt.xticks([0, 177], ['0', '0.5'], size= 14)
         plt.yticks([])
-        # plt.legend()
-        # plt.savefig('/Users/malmani/Creative Cloud Files/Fig3/CCA_619.svg', format='svg', dpi=300, transparent= True)
         plt.savefig('cca_fast.png')
 
     elif args.speed == 'slow':
@@ -94,8 +90,6 @@ def main():
         plt.ylabel('Reconstructed M1 Population Activity', fontsize=16)
         plt.xticks([0, 220], ['0', '0.5'], size= 14)
         plt.yticks([])
-        # plt.legend()
-        # plt.savefig('/Users/malmani/Creative Cloud Files/Fig3/CCA_619.svg', format='svg', dpi=300, transparent= True)
         plt.savefig('cca_slow.png')
 
     print('Now printing the correlations')
