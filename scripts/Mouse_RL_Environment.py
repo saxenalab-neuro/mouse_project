@@ -63,7 +63,7 @@ class PyBulletEnv(gym.Env):
         #####META PARAMETERS FOR SIMULATION#####
         self.n_fixedsteps = 0
         self._max_episode_steps = timestep #Does not matter. It is being set in the main.py where the total number of steps are being changed.
-        self.threshold_user = 0.0035
+        self.threshold_user = 0.004
         self.timestep = timestep
         self.frame_skip= frame_skip
 
@@ -173,12 +173,11 @@ class Mouse_Env(PyBulletEnv):
         distances = [d_x, d_y, d_z]
 
         if d_x > self.threshold_x or d_y > self.threshold_y or d_z > self.threshold_z:
-            reward = -10
-        
+            reward = -5
         else:
-            r_x= 1/(2500**d_x)
-            r_y= 1/(2500**d_y)
-            r_z= 1/(2500**d_z)
+            r_x= 1/(7500**d_x)
+            r_y= 1/(7500**d_y)
+            r_z= 1/(7500**d_z)
 
             reward= r_x + r_y + r_z
 
@@ -279,9 +278,10 @@ class Mouse_Env(PyBulletEnv):
         self.controller_to_actuator(forces)
 
         #can edit threshold with episodes
-        self.threshold_x = .0035
-        self.threshold_y = .0035
-        self.threshold_z = .0035
+        # larger threshold, used to be .0035
+        self.threshold_x = .005
+        self.threshold_y = .005
+        self.threshold_z = .005
 
         self.do_simulation()
 
@@ -289,7 +289,7 @@ class Mouse_Env(PyBulletEnv):
 
         reward, distances = self.get_reward()
         cost = self.get_cost(forces)
-        final_reward= (5*reward) - (self.forces_scale*cost) 
+        final_reward= 5*reward #- (self.forces_scale*cost) 
 
         done = self.is_done()
         

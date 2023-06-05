@@ -13,9 +13,9 @@ from Mouse_RL_Environment import Mouse_Env
 from SAC.replay_memory import PolicyReplayMemory
 from SAC.sac import SAC
 
-file_path = "../model_utilities/mouse_fixed.sdf" # mouse model, body fixed except for right arm
-pose_file = "../model_utilities/right_forelimb_pose.yaml" # pose file for original pose
-muscle_config_file = "../model_utilities/right_forelimb.yaml" # muscle file for right arm
+file_path = "model_utilities/mouse_fixed.sdf" # mouse model, body fixed except for right arm
+pose_file = "model_utilities/right_forelimb_pose.yaml" # pose file for original pose
+muscle_config_file = "model_utilities/right_forelimb.yaml" # muscle file for right arm
 
 model_offset = (0.0, 0.0, .0475) #z position modified with global scaling
 
@@ -90,7 +90,6 @@ def main():
 
     ###SIMULATION PARAMETERS###
     frame_skip = 1
-    n_frames = 1
     timestep = 170
 
     ### CREATE ENVIRONMENT, AGENT, MEMORY ###
@@ -129,35 +128,22 @@ def main():
     dataset = ['data_fast', 'data_slow', 'data_1']
 
     ########################### Data_Fast ###############################
-    mat = scipy.io.loadmat('../data/kinematics_session_mean_alt_fast.mat')
+    mat = scipy.io.loadmat('data/kinematics_session_mean_alt_fast.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_fast = data[231:401:1] * -1
     data_fast = [-13.45250312, *data_fast[8:]]
     # Data must start and end at same spot or there is jump
-    mouse_fast = np.zeros_like(data_fast)
-    data_fast_avg = 0
-    data_fast_rewards = [0]
 
     ########################### Data_Slow ###############################
-    mat = scipy.io.loadmat('../data/kinematics_session_mean_alt_slow.mat')
+    mat = scipy.io.loadmat('data/kinematics_session_mean_alt_slow.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_slow = data[256:476:1] * -1
-    mouse_slow = np.zeros_like(data_slow)
-    data_slow_avg = 0
-    data_slow_rewards = [0]
 
     ############################ Data_1 ##############################
-    mat = scipy.io.loadmat('../data/kinematics_session_mean_alt1.mat')
+    mat = scipy.io.loadmat('data/kinematics_session_mean_alt1.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_1= data[226:406:1] * -1
     data_1 = [-13.45250312, *data_1[4:]]
-    mouse_1 = np.zeros_like(data_1)
-    data_1_avg = 0
-    data_1_rewards = [0]
-
-    data_fast_pos = 1
-    data_slow_pos = 1
-    data_1_pos = 1
 
     ### BEGIN TRAINING LOOP
     for i_episode in itertools.count(1):
@@ -200,7 +186,7 @@ def main():
                 if args.start_steps > total_numsteps:
                     action = mouseEnv.action_space.sample()  # Sample random action
                 else:
-                    action, h_current, c_current, _ = agent.select_action(state, h_prev, c_prev)  # Sample action from policy
+                    action, h_current, c_current = agent.select_action(state, h_prev, c_prev)  # Sample action from policy
 
             action_list.append(action)
             
@@ -209,8 +195,8 @@ def main():
                 # Number of updates per step in environment
                 for j in range(args.updates_per_step):
                     # Update parameters of all the networks
-                    critic_1_loss, critic_2_loss, policy_loss, ent_loss, alpha = agent.update_parameters(policy_memory, args.policy_batch_size, updates)
-                    policy_loss_tracker.append(policy_loss)
+                    critic_1_loss, critic_2_loss, policy_loss_1, policy_loss_2, policy_loss_3, policy_loss_4, ent_loss, alpha = agent.update_parameters(policy_memory, args.policy_batch_size, updates)
+                    #policy_loss_tracker.append(policy_loss)
                     updates += 1
 
             ### TRACKING REWARD + EXPERIENCE TUPLE###
@@ -219,10 +205,7 @@ def main():
 
             mask = 1 if episode_steps == mouseEnv._max_episode_steps else float(not done)
 
-            if episode_steps == 0:
-                ep_trajectory.append((state, action, np.array([reward]), next_state, np.array([mask]), h_prev, c_prev, h_current, c_current))
-            else:
-                ep_trajectory.append((state, action, np.array([reward]), next_state, np.array([mask])))
+            ep_trajectory.append((state, action, reward, next_state, mask, h_current.squeeze(0).cpu().numpy(),  c_current.squeeze(0).cpu().numpy()))
 
             state = next_state
             h_prev = h_current
@@ -240,11 +223,11 @@ def main():
             highest_reward = episode_reward 
 
             #pylog.debug("Saving policy and Q network")
-            #torch.save(agent.policy.state_dict(), '../models/policy_net_cost10_best.pth')
-            #torch.save(agent.critic.state_dict(), '../models/value_net_cost10_best.pth')
+            torch.save(agent.policy.state_dict(), 'models/policy_net_origloss.5rhigh_best.pth')
+            torch.save(agent.critic.state_dict(), 'models/value_net_origloss.5rhigh_best.pth')
         
-        #torch.save(agent.policy.state_dict(), '../models/policy_net_cost10_cur.pth')
-        #torch.save(agent.critic.state_dict(), '../models/value_net_cost10_cur.pth')
+        torch.save(agent.policy.state_dict(), 'models/policy_net_origloss.5rhigh_cur.pth')
+        torch.save(agent.critic.state_dict(), 'models/value_net_origloss.5rhigh_cur.pth')
 
         pylog.debug('Iteration: {} | reward with total timestep {}: {}, timesteps completed: {}'.format(i_episode, mouseEnv.timestep, episode_reward, episode_steps))
         pylog.debug('highest reward so far: {}'.format(highest_reward))
