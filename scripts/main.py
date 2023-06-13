@@ -80,7 +80,7 @@ def train_episode(mouseEnv, agent, policy_memory, episode_reward, episode_steps,
     c_prev = torch.zeros(size=(1, 1, args.hidden_size))
 
     ### STEPS PER EPISODE ###
-    for i in range(mouseEnv.timestep):
+    for i in range(mouseEnv._max_episode_steps):
         
         with torch.no_grad():
             action, h_current, c_current, _ = agent.select_action(state, h_prev, c_prev)  # Sample action from policy
@@ -138,7 +138,7 @@ def test(mouseEnv, agent, episode_reward, episode_steps, args):
     c_prev = torch.zeros(size=(1, 1, args.hidden_size))
 
     ### STEPS PER EPISODE ###
-    for i in range(mouseEnv.timestep):
+    for i in range(mouseEnv._max_episode_steps):
 
         hand_pos = p.getLinkState(mouseEnv.model, 115)[0][0]
         x_kinematics.append(hand_pos)
@@ -217,6 +217,8 @@ def main():
                         help='Critic Type: ReplayLSTM | ReplayRNN, use depends on the type of policy selected')
     parser.add_argument('--multi_loss', type=bool, default=False,
                         help='Whether to use multiple losses (only for RNN policy)')
+    parser.add_argument('--two_speeds', type=bool, default=False,
+                        help='Only train on slow an medium speed, leave fast for testing')
     parser.add_argument('--cost_scale', type=float, default=0.5, metavar='G',
                         help='scaling of the cost, default: 0.5')
     args = parser.parse_args()
@@ -279,6 +281,7 @@ def main():
         episode_reward = 0
         episode_steps = 0
 
+        # Select the speed based on environment type
         if args.env_type == 'kin':
             mouseEnv._max_episode_steps = len(all_datasets[i_episode % 3])
             mouseEnv.x_pos = all_datasets[i_episode % 3]
@@ -289,27 +292,36 @@ def main():
         # Training
         if not args.test_model:
 
+            # Skip the fast speed during training if only using two speeds
+            if i_episode % 3 == 0 and args.two_speeds:
+                continue
+
+            # Run the episode
             ep_trajectory, episode_reward, episode_steps = train_episode(mouseEnv, agent, policy_memory, episode_reward, episode_steps, args)
 
             ### SAVING MODELS + TRACKING VARIABLES ###
             if episode_reward > highest_reward:
                 highest_reward = episode_reward 
             
+            # Save the model if necessary
             if args.save_model:
                 torch.save(agent.policy.state_dict(), f'models/policy_net_{args.model_save_name}.pth')
                 torch.save(agent.critic.state_dict(), f'models/value_net_{args.model_save_name}.pth')
 
-            pylog.debug('Iteration: {} | reward with total timestep {}: {}, timesteps completed: {}'.format(i_episode, mouseEnv.timestep, episode_reward, episode_steps))
+            # Printing rewards
+            pylog.debug('Iteration: {} | reward with total timestep {}: {}, timesteps completed: {}'.format(i_episode, mouseEnv._max_episode_steps, episode_reward, episode_steps))
             pylog.debug('highest reward so far: {}'.format(highest_reward))
 
-            #reward_tracker.append(episode_reward)
+            # Push the episode to replay
             policy_memory.push(ep_trajectory)
 
         # Testing, i.e. getting kinematics and activities
         else:
 
+            # Run the episode for testing
             episode_reward, x_kinematics, lstm_activity = test(mouseEnv, agent, episode_reward, episode_steps, args)
 
+            # Check to see the highest reward for each speed, then save
             if episode_reward > highest_reward_1 and data_curr == 'data_1':
                     x_kinematics = np.array(x_kinematics)
                     lstm_activity = np.concatenate(lstm_activity, axis=0)
@@ -333,9 +345,6 @@ def main():
                     np.save('mouse_experiments/data/mouse_fast', x_kinematics)
                     np.save('mouse_experiments/data/mouse_fast_activity', lstm_activity)
                     highest_reward_fast = episode_reward
-
-        #np.savetxt('../Score/rewards.txt', reward_tracker)
-        #np.savetxt('../Score/policy_losses.txt', policy_loss_tracker)
 
     mouseEnv.close() #disconnects server
 
