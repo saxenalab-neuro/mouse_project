@@ -176,7 +176,7 @@ def main():
                         help='discount factor for reward (default: 0.99)')
     parser.add_argument('--tau', type=float, default=0.005, metavar='G',
                         help='target smoothing coefficient(τ) (default: 0.005)')
-    parser.add_argument('--lr', type=float, default=0.0005, metavar='G',
+    parser.add_argument('--lr', type=float, default=0.0003, metavar='G',
                         help='learning rate (default: 0.001)')
     parser.add_argument('--alpha', type=float, default=0.2, metavar='G',
                         help='Temperature parameter α determines the relative importance of the entropy\
@@ -280,7 +280,6 @@ def main():
         episode_steps = 0
 
         if args.env_type == 'kin':
-            mouseEnv.timestep = len(all_datasets[i_episode % 3])
             mouseEnv._max_episode_steps = len(all_datasets[i_episode % 3])
             mouseEnv.x_pos = all_datasets[i_episode % 3]
             data_curr = dataset_names[i_episode % 3]
@@ -297,8 +296,8 @@ def main():
                 highest_reward = episode_reward 
             
             if args.save_model:
-                torch.save(agent.policy.state_dict(), f'models/policy_net_{args.model_save_name}_cur.pth')
-                torch.save(agent.critic.state_dict(), f'models/value_net_{args.model_save_name}_cur.pth')
+                torch.save(agent.policy.state_dict(), f'models/policy_net_{args.model_save_name}.pth')
+                torch.save(agent.critic.state_dict(), f'models/value_net_{args.model_save_name}.pth')
 
             pylog.debug('Iteration: {} | reward with total timestep {}: {}, timesteps completed: {}'.format(i_episode, mouseEnv.timestep, episode_reward, episode_steps))
             pylog.debug('highest reward so far: {}'.format(highest_reward))

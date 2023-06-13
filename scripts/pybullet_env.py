@@ -74,7 +74,6 @@ class PyBulletEnv(gym.Env):
         #####META PARAMETERS FOR SIMULATION#####
         self.n_fixedsteps = 0
         self._max_episode_steps = timestep #Does not matter. It is being set in the main.py where the total number of steps are being changed.
-        self.timestep = timestep
         self.frame_skip= frame_skip
 
         p.resetDebugVisualizerCamera(0.3, 15, -10, [0, 0.21, 0])

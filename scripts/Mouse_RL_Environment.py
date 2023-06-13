@@ -86,7 +86,7 @@ class Mouse_Env(PyBulletEnv):
         hand_pos =  np.array(p.getLinkState(self.model, 115, computeForwardKinematics=True)[0]) #(x, y, z)
         criteria = hand_pos - self.target_pos
 
-        if self.istep >= self.timestep:
+        if self.istep >= self.max_episode_steps:
             return True
 
         if np.abs(criteria[0]) > self.threshold_x or np.abs(criteria[1]) > self.threshold_y or np.abs(criteria[2]) > self.threshold_z:
@@ -220,7 +220,7 @@ class Mouse_Env_Simulated(PyBulletEnv):
         hand_pos =  np.array(p.getLinkState(self.model, 115, computeForwardKinematics=True)[0]) #(x, y, z)
         criteria = hand_pos - self.target_pos
 
-        if self.istep >= self.timestep:
+        if self.istep >= self._max_episode_steps:
             return True
 
         if np.abs(criteria[0]) > self.threshold_x or np.abs(criteria[1]) > self.threshold_y or np.abs(criteria[2]) > self.threshold_z:
