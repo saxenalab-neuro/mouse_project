@@ -27,13 +27,14 @@ def main():
 
     #Now load the lstm activities
     #dim= [#timepoints, neurons]
-    agent_alt1 = np.loadtxt('scripts/mouse_1_activity.txt')
+    agent_alt1 = np.load('mouse_experiments/data/mouse_1_activity.npy')
     agent_alt1 = agent_alt1[1:]
 
-    agent_slow = np.loadtxt('scripts/mouse_slow_activity.txt')
+    agent_slow = np.load('mouse_experiments/data/mouse_slow_activity.npy')
 
-    agent_fast = np.loadtxt('scripts/mouse_fast_activity.txt')
+    agent_fast = np.load('mouse_experiments/data/mouse_fast_activity.npy')
     agent_fast = agent_fast[1:]
+
     # Test the magnitudes between the one that works well and the one that doesnt
 
     #Now do the CCA
@@ -76,21 +77,21 @@ def main():
         plt.ylabel('Reconstructed M1 Population Activity', fontsize=16)
         plt.xticks([0, 163], ['0', '0.5'], size= 14)
         plt.yticks([])
-        plt.savefig('cca_1.png')
+        plt.savefig('mouse_experiments/data/cca_1.png')
 
     elif args.speed == 'fast':
 
         plt.ylabel('Reconstructed M1 Population Activity', fontsize=16)
         plt.xticks([0, 177], ['0', '0.5'], size= 14)
         plt.yticks([])
-        plt.savefig('cca_fast.png')
+        plt.savefig('mouse_experiments/data/cca_fast.png')
 
     elif args.speed == 'slow':
 
         plt.ylabel('Reconstructed M1 Population Activity', fontsize=16)
         plt.xticks([0, 220], ['0', '0.5'], size= 14)
         plt.yticks([])
-        plt.savefig('cca_slow.png')
+        plt.savefig('mouse_experiments/data/cca_slow.png')
 
     print('Now printing the correlations')
 

@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Normal
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence, pad_sequence
+import numpy as np
 
 LOG_SIG_MAX = 2
 LOG_SIG_MIN = -20
@@ -142,7 +143,7 @@ class GaussianPolicyRNN(nn.Module):
 
     def forward(self, state, h_prev, c_prev, sampling, len_seq= None):
 
-        x = F.tanh(self.linear1(state))
+        x = F.relu(F.tanh(self.linear1(state)))
 
         if sampling == False:
             assert len_seq!=None, "Proved the len_seq"
@@ -157,7 +158,8 @@ class GaussianPolicyRNN(nn.Module):
         if sampling == True:
             x = x.squeeze(1)
         
-        mean = self.mean_linear(x)
+        x = F.relu(x)
+        mean = F.tanh(self.mean_linear(x))
         log_std = self.log_std_linear(x)
         log_std = torch.clamp(log_std, min=LOG_SIG_MIN, max=LOG_SIG_MAX)
 
@@ -202,7 +204,7 @@ class GaussianPolicyRNN(nn.Module):
 
     def forward_for_simple_dynamics(self, state, h_prev, c_prev, sampling, len_seq= None):
 
-        x = F.tanh(self.linear1(state))
+        x = F.relu(F.tanh(self.linear1(state)))
 
         #Tap the output of the first linear layer
         x_l1 = x
@@ -218,6 +220,7 @@ class GaussianPolicyRNN(nn.Module):
         if sampling == False:
            x, len_x_seq = pad_packed_sequence(x, batch_first= True)
 
+        x = F.relu(x)
         return x, x_l1
 
     def to(self, device):
@@ -287,12 +290,16 @@ class GaussianPolicyLSTM(nn.Module):
         std = log_std.exp()
         normal = Normal(mean, std)
         x_t = normal.rsample()
+
         y_t = torch.tanh(x_t)
         action = y_t * self.action_scale + self.action_bias
+
         log_prob = normal.log_prob(x_t)
+
         # Enforce the action_bounds
         log_prob -= torch.log(self.action_scale * (1 - y_t.pow(2)) + epsilon)
         log_prob = log_prob.sum(1, keepdim=True)
+
         mean = torch.tanh(mean) * self.action_scale + self.action_bias
 
         if sampling == False:

@@ -1,7 +1,7 @@
 import os
 import torch
 import torch.nn.functional as F
-from torch.optim import Adam
+from torch.optim import AdamW
 from .utils1 import soft_update, hard_update
 from .model import GaussianPolicyLSTM, GaussianPolicyRNN, QNetworkFF, QNetworkLSTM
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence, pad_sequence
@@ -18,6 +18,11 @@ class SAC(object):
         self.automatic_entropy_tuning = args.automatic_entropy_tuning
         self.device = torch.device("cuda" if args.cuda else "cpu")
 
+        self.max_loss_1 = 4.63e-5
+        self.max_loss_2 = 66914.3
+        self.max_loss_3 = 22162.03
+        self.max_loss_4 = 1368.4
+
         # Select which Q network to use
         if args.critic == 'QNetworkLSTM':
             self.critic = QNetworkLSTM(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
@@ -31,13 +36,13 @@ class SAC(object):
             raise Exception("Critic selected not available, please choose QNetworkFF or QNetworkLSTM")
 
         # optimizer for Q network
-        self.critic_optim = Adam(self.critic.parameters(), lr=args.lr)
+        self.critic_optim = AdamW(self.critic.parameters(), lr=args.lr)
 
         # Target Entropy = −dim(A) (e.g. , -6 for HalfCheetah-v2) as given in the paper
         if args.automatic_entropy_tuning:
             self.target_entropy = -torch.prod(torch.Tensor(action_space.shape).to(self.device)).item()
             self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
-            self.alpha_optim = Adam([self.log_alpha], lr=args.lr)
+            self.alpha_optim = AdamW([self.log_alpha], lr=args.lr)
 
         # select which policy to use
         if args.policy == "GaussianLSTM":
@@ -47,7 +52,7 @@ class SAC(object):
         else:
             raise Exception("Policy selected not available, please choose GaussianRNN or GaussianLSTM")
 
-        self.policy_optim = Adam(self.policy.parameters(), lr=args.lr)
+        self.policy_optim = AdamW(self.policy.parameters(), lr=args.lr)
 
     def select_action(self, state, h_prev, c_prev, evaluate=False):
         state = torch.FloatTensor(state).to(self.device).unsqueeze(0).unsqueeze(0)
@@ -64,6 +69,7 @@ class SAC(object):
     def update_parametersRNN(self, policy_memory, policy_batch_size):
         # Sample a batch from memory
         state_batch, action_batch, reward_batch, next_state_batch, mask_batch, h_batch, c_batch, policy_state_batch = policy_memory.sample(batch_size=policy_batch_size)
+
         
         state_batch = torch.FloatTensor(state_batch).to(self.device)
         next_state_batch = torch.FloatTensor(next_state_batch).to(self.device)
@@ -74,7 +80,7 @@ class SAC(object):
         c_batch = torch.FloatTensor(c_batch).to(self.device)
 
         with torch.no_grad():
-            next_state_action, next_state_log_pi, _, _, _, _, _ = self.policy.sample(next_state_batch.unsqueeze(1), h_batch, c_batch, sampling= True)
+            next_state_action, next_state_log_pi, _, _, _, _, _ = self.policy.sample(next_state_batch.unsqueeze(1), h_batch, c_batch, sampling=True)
             qf1_next_target, qf2_next_target = self.critic_target(next_state_batch, next_state_action)
             min_qf_next_target = torch.min(qf1_next_target, qf2_next_target) - self.alpha * next_state_log_pi
             next_q_value = reward_batch + mask_batch * self.gamma * (min_qf_next_target)
@@ -102,13 +108,14 @@ class SAC(object):
         min_qf_pi = torch.min(qf1_pi, qf2_pi)
 
         policy_loss = ((self.alpha * log_prob_bat) - min_qf_pi).mean() # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]
+        policy_loss *= (1/5000)
 
         if self.multiple_losses:
             # Sample the hidden weights of the RNN
             J_lstm_w = self.policy.lstm.weight_hh_l0        #These weights would be of the size (hidden_dim, hidden_dim)
 
             #Sample the output of the RNN for the policy_state_batch
-            lstm_out_r, _ = self.policy.forward_for_simple_dynamics(policy_state_batch, h0, c0, sampling= False, len_seq= len_seq)
+            lstm_out_r, _ = self.policy.forward_for_simple_dynamics(policy_state_batch, h0, c0, sampling=False, len_seq= len_seq)
             lstm_out_r = lstm_out_r.reshape(-1, lstm_out_r.size()[-1])[mask_seq]
 
             #Reshape the policy hidden weights vector
@@ -121,11 +128,14 @@ class SAC(object):
 
             #Find the loss encouraging the minimization of the firing rates for the linear and the RNN layer
             #Sample the output of the RNN for the policy_state_batch
-            lstm_out_r, linear_out = self.policy.forward_for_simple_dynamics(policy_state_batch, h0, c0, sampling= False, len_seq= len_seq)
+            lstm_out_r, linear_out = self.policy.forward_for_simple_dynamics(policy_state_batch, h0, c0, sampling=False, len_seq= len_seq)
             lstm_out_r = lstm_out_r.reshape(-1, lstm_out_r.size()[-1])[mask_seq]
             linear_out = linear_out.reshape(-1, linear_out.size()[-1])[mask_seq]
 
-            policy_loss_3 = torch.norm(lstm_out_r)**2 + torch.norm(linear_out)**2
+            mean_out_emg, _, _, _, _ = self.policy.forward(policy_state_batch, h0, c0, sampling=False, len_seq=len_seq)
+            mean_out_emg = mean_out_emg.reshape(-1, mean_out_emg.size()[-1])[mask_seq]
+
+            policy_loss_3 = torch.norm(lstm_out_r)**2 + torch.norm(linear_out)**2 + torch.norm(mean_out_emg)**2
 
             #Find the loss encouraging the minimization of the input and output weights of the LSTM(RNN) and the layers downstream
             #and upstream of the LSTM
@@ -136,11 +146,10 @@ class SAC(object):
             #Sample the output weights
             # J_out = self.policy.linear2.weight
             J_out1 = self.policy.mean_linear.weight
-            J_out2 = self.policy.log_std_linear.weight
 
-            policy_loss_4 = torch.norm(J_in1)**2 + torch.norm(J_lstm_i)**2 + torch.norm(J_out1)**2 + torch.norm(J_out2)**2
+            policy_loss_4 = torch.norm(J_in1)**2 + torch.norm(J_lstm_i)**2 + torch.norm(J_out1)**2 
 
-            policy_loss += 0.1*policy_loss_2 + 0.01*policy_loss_3 + 0.001*policy_loss_4
+            policy_loss += (0.001*(policy_loss_2/self.max_loss_2)) + (0.01*(policy_loss_3/self.max_loss_3)) + (0.01*(policy_loss_4/self.max_loss_4))
 
         self.policy_optim.zero_grad()
         policy_loss.backward()
@@ -233,7 +242,6 @@ class SAC(object):
 
         pi_state_action_batch_p = torch.cat((state_batch_p, pi_action_bat_p), dim=2)
         pi_state_action_batch = pack_padded_sequence(pi_state_action_batch_p, seq_lengths, batch_first= True, enforce_sorted= False)
-
 
         qf1_pi_p, qf2_pi_p = self.critic(pi_state_action_batch, hidden_in)
         qf1_pi = self.filter_padded(qf1_pi_p, seq_lengths)
