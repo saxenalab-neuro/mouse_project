@@ -144,6 +144,7 @@ class GaussianPolicyRNN(nn.Module):
     def forward(self, state, h_prev, c_prev, sampling, len_seq= None):
 
         x = F.relu(F.tanh(self.linear1(state)))
+        #x = F.tanh(self.linear1(state))
 
         if sampling == False:
             assert len_seq!=None, "Proved the len_seq"
@@ -160,6 +161,7 @@ class GaussianPolicyRNN(nn.Module):
         
         x = F.relu(x)
         mean = F.tanh(self.mean_linear(x))
+        #mean = self.mean_linear(x)
         log_std = self.log_std_linear(x)
         log_std = torch.clamp(log_std, min=LOG_SIG_MIN, max=LOG_SIG_MAX)
 
@@ -205,6 +207,7 @@ class GaussianPolicyRNN(nn.Module):
     def forward_for_simple_dynamics(self, state, h_prev, c_prev, sampling, len_seq= None):
 
         x = F.relu(F.tanh(self.linear1(state)))
+        #x = F.tanh(self.linear1(state))
 
         #Tap the output of the first linear layer
         x_l1 = x

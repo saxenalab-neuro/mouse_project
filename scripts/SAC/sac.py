@@ -1,7 +1,7 @@
 import os
 import torch
 import torch.nn.functional as F
-from torch.optim import AdamW
+from torch.optim import Adam
 from .utils1 import soft_update, hard_update
 from .model import GaussianPolicyLSTM, GaussianPolicyRNN, QNetworkFF, QNetworkLSTM
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence, pad_sequence
@@ -18,11 +18,6 @@ class SAC(object):
         self.automatic_entropy_tuning = args.automatic_entropy_tuning
         self.device = torch.device("cuda" if args.cuda else "cpu")
 
-        self.max_loss_1 = 4.63e-5
-        self.max_loss_2 = 66914.3
-        self.max_loss_3 = 22162.03
-        self.max_loss_4 = 1368.4
-
         # Select which Q network to use
         if args.critic == 'QNetworkLSTM':
             self.critic = QNetworkLSTM(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
@@ -36,13 +31,13 @@ class SAC(object):
             raise Exception("Critic selected not available, please choose QNetworkFF or QNetworkLSTM")
 
         # optimizer for Q network
-        self.critic_optim = AdamW(self.critic.parameters(), lr=args.lr)
+        self.critic_optim = Adam(self.critic.parameters(), lr=args.lr)
 
         # Target Entropy = −dim(A) (e.g. , -6 for HalfCheetah-v2) as given in the paper
         if args.automatic_entropy_tuning:
             self.target_entropy = -torch.prod(torch.Tensor(action_space.shape).to(self.device)).item()
             self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
-            self.alpha_optim = AdamW([self.log_alpha], lr=args.lr)
+            self.alpha_optim = Adam([self.log_alpha], lr=args.lr)
 
         # select which policy to use
         if args.policy == "GaussianLSTM":
@@ -52,7 +47,7 @@ class SAC(object):
         else:
             raise Exception("Policy selected not available, please choose GaussianRNN or GaussianLSTM")
 
-        self.policy_optim = AdamW(self.policy.parameters(), lr=args.lr)
+        self.policy_optim = Adam(self.policy.parameters(), lr=args.lr)
 
     def select_action(self, state, h_prev, c_prev, evaluate=False):
         state = torch.FloatTensor(state).to(self.device).unsqueeze(0).unsqueeze(0)
@@ -108,7 +103,6 @@ class SAC(object):
         min_qf_pi = torch.min(qf1_pi, qf2_pi)
 
         policy_loss = ((self.alpha * log_prob_bat) - min_qf_pi).mean() # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]
-        policy_loss *= (1/5000)
 
         if self.multiple_losses:
             # Sample the hidden weights of the RNN
@@ -149,7 +143,7 @@ class SAC(object):
 
             policy_loss_4 = torch.norm(J_in1)**2 + torch.norm(J_lstm_i)**2 + torch.norm(J_out1)**2 
 
-            policy_loss += (0.001*(policy_loss_2/self.max_loss_2)) + (0.01*(policy_loss_3/self.max_loss_3)) + (0.01*(policy_loss_4/self.max_loss_4))
+            policy_loss += (0.001*(policy_loss_2)) + (0.01*(policy_loss_3)) + (0.03*(policy_loss_4))
 
         self.policy_optim.zero_grad()
         policy_loss.backward()
