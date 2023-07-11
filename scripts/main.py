@@ -6,6 +6,7 @@ import itertools
 import scipy.io
 import torch
 import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d, CubicSpline, BarycentricInterpolator, PchipInterpolator, Akima1DInterpolator
 
 import farms_pylog as pylog
 import model_utils as model_utils
@@ -45,25 +46,53 @@ def interpolate(orig_data):
 
     return interpolated
 
-def preprocess():
+def preprocess(cycles=1):
 
     ########################### Data_Fast ###############################
     mat = scipy.io.loadmat('data/kinematics_session_mean_alt_fast.mat')
     data = np.array(mat['kinematics_session_mean'][2])
-    data_fast = data[231:401:1] * -1
-    data_fast = [-13.45250312, *data_fast[8:]]
-    # Data must start and end at same spot or there is jump
+    data_fast_orig = data[231:401:1] * -1
+    data_fast_orig = [-13.45250312, *data_fast_orig[8:-1]]
+    data_fast = [*data_fast_orig] * cycles
+    if cycles > 1:
+        # This needs to be done for smooth kinematics with cycles since they end at arbitrary points
+        x = np.arange(0, len(data_fast))
+        cs = Akima1DInterpolator(x, data_fast)
+        # end point of kinematics and start point of next cycle
+        x_interp = np.linspace(len(data_fast_orig)-1, len(data_fast_orig), 14)
+        y_interp = cs(x_interp)
+        # Get the new interpolated kinematics without repeating points
+        data_fast = [*data_fast_orig, *y_interp[2:-2]] * cycles
+        np.save('mouse_experiments/data/interp_fast', data_fast)
 
+    # Data must start and end at same spot or there is jump
     ########################### Data_Slow ###############################
     mat = scipy.io.loadmat('data/kinematics_session_mean_alt_slow.mat')
     data = np.array(mat['kinematics_session_mean'][2])
-    data_slow = data[256:476:1] * -1
+    data_slow_orig = data[256:476:1] * -1
+    data_slow_orig = [*data_slow_orig[:-6]]
+    data_slow = [*data_slow_orig] * cycles
+    if cycles > 1:
+        x = np.arange(0, len(data_slow))
+        cs = Akima1DInterpolator(x, data_slow)
+        x_interp = np.linspace(len(data_slow_orig)-1, len(data_slow_orig), 5)
+        y_interp = cs(x_interp)
+        data_slow = [*data_slow_orig, *y_interp[1:-1]] * cycles
+        np.save('mouse_experiments/data/interp_slow', data_slow)
 
     ############################ Data_1 ##############################
     mat = scipy.io.loadmat('data/kinematics_session_mean_alt1.mat')
     data = np.array(mat['kinematics_session_mean'][2])
-    data_1= data[226:406:1] * -1
-    data_1 = [-13.45250312, *data_1[4:]]
+    data_1_orig = data[226:406:1] * -1
+    data_1_orig = [-13.45250312, *data_1_orig[4:-3]]
+    data_1 = [*data_1_orig] * cycles
+    if cycles > 1:
+        x = np.arange(0, len(data_1))
+        cs = Akima1DInterpolator(x, data_1)
+        x_interp = np.linspace(len(data_1_orig)-1, len(data_1_orig), 3)
+        y_interp = cs(x_interp)
+        data_1 = [*data_1_orig, *y_interp[1:-1]] * cycles
+        np.save('mouse_experiments/data/interp_1', data_1)
 
     return data_fast, data_slow, data_1
 
@@ -145,7 +174,7 @@ def test(mouseEnv, agent, episode_reward, episode_steps, args):
 
         with torch.no_grad():
             action, h_current, c_current, lstm_out = agent.select_action(state, h_prev, c_prev)  # Sample action from policy
-            lstm_out = np.squeeze(lstm_out, axis=0)
+            lstm_out = np.squeeze(lstm_out)
             lstm_activity.append(lstm_out)
 
         ### TRACKING REWARD + EXPERIENCE TUPLE###
@@ -221,6 +250,8 @@ def main():
                         help='Only train on slow an medium speed, leave fast for testing')
     parser.add_argument('--cost_scale', type=float, default=0.5, metavar='G',
                         help='scaling of the cost, default: 0.5')
+    parser.add_argument('--cycles', type=int, default=1, metavar='N',
+                        help='Number of times to cycle the kinematics (Default: 1)')
     args = parser.parse_args()
 
     ###SIMULATION PARAMETERS###
@@ -266,7 +297,7 @@ def main():
     highest_reward = 0
 
     ### DATA SET LOADING/PROCESSING ###
-    data_fast, data_slow, data_1 = preprocess()
+    data_fast, data_slow, data_1 = preprocess(args.cycles)
     all_datasets = [data_fast, data_slow, data_1]
     dataset_names = ['data_fast', 'data_slow', 'data_1']
     sim_timesteps = [150, 200, 250]
@@ -309,7 +340,7 @@ def main():
                 torch.save(agent.critic.state_dict(), f'models/value_net_{args.model_save_name}.pth')
 
             # Printing rewards
-            pylog.debug('Iteration: {} | reward with total timestep {}: {}, timesteps completed: {}'.format(i_episode, mouseEnv._max_episode_steps, episode_reward, episode_steps))
+            pylog.debug('Iteration: {} | reward with total timestep {} ({} speed): {}, timesteps completed: {}'.format(i_episode, mouseEnv._max_episode_steps, data_curr, episode_reward, episode_steps))
             pylog.debug('highest reward so far: {}'.format(highest_reward))
 
             # Push the episode to replay
@@ -324,7 +355,7 @@ def main():
             # Check to see the highest reward for each speed, then save
             if episode_reward > highest_reward_1 and data_curr == 'data_1':
                     x_kinematics = np.array(x_kinematics)
-                    lstm_activity = np.concatenate(lstm_activity, axis=0)
+                    lstm_activity = np.array(lstm_activity)
                     print(f'New highest reward for data_1: {episode_reward}')
                     np.save('mouse_experiments/data/mouse_1', x_kinematics)
                     np.save('mouse_experiments/data/mouse_1_activity', lstm_activity)
@@ -332,7 +363,7 @@ def main():
 
             elif episode_reward > highest_reward_slow and data_curr == 'data_slow':
                     x_kinematics = np.array(x_kinematics)
-                    lstm_activity = np.concatenate(lstm_activity, axis=0)
+                    lstm_activity = np.array(lstm_activity)
                     print(f'New highest reward for data_slow: {episode_reward}')
                     np.save('mouse_experiments/data/mouse_slow', x_kinematics)
                     np.save('mouse_experiments/data/mouse_slow_activity', lstm_activity)
@@ -340,7 +371,7 @@ def main():
 
             elif episode_reward > highest_reward_fast and data_curr == 'data_fast':
                     x_kinematics = np.array(x_kinematics)
-                    lstm_activity = np.concatenate(lstm_activity, axis=0)
+                    lstm_activity = np.array(lstm_activity)
                     print(f'New highest reward for data_fast: {episode_reward}')
                     np.save('mouse_experiments/data/mouse_fast', x_kinematics)
                     np.save('mouse_experiments/data/mouse_fast_activity', lstm_activity)
