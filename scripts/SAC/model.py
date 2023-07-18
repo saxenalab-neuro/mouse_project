@@ -217,8 +217,10 @@ class GaussianPolicyRNN(nn.Module):
 
     def forward_for_simple_dynamics(self, state, h_prev, c_prev, sampling, len_seq= None):
 
-        x = F.relu(F.tanh(self.linear1(state)))
+        #x = F.relu(F.tanh(self.linear1(state)))
         #x = F.tanh(self.linear1(state))
+        x = F.relu(self.linear1(state))
+        x = F.relu(self.linear2(x))
 
         #Tap the output of the first linear layer
         x_l1 = x
@@ -230,11 +232,13 @@ class GaussianPolicyRNN(nn.Module):
             x = pack_padded_sequence(x, len_seq, batch_first= True, enforce_sorted= False)
 
         x, (h_current) = self.lstm(x, (h_prev))
+        x = F.relu(self.linear3(x))
+        x = F.relu(self.linear4(x))
 
         if sampling == False:
            x, len_x_seq = pad_packed_sequence(x, batch_first= True)
 
-        x = F.relu(x)
+        #x = F.relu(x)
         return x, x_l1
 
     def to(self, device):
