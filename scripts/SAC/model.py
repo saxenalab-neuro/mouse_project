@@ -38,14 +38,12 @@ class QNetworkFF(nn.Module):
         # Q1 architecture
         self.linear1 = nn.Linear(num_inputs + num_actions, hidden_dim)
         self.linear2 = nn.Linear(hidden_dim, hidden_dim)
-        self.linear3 = nn.Linear(hidden_dim, hidden_dim)
-        self.linear4 = nn.Linear(hidden_dim, 1)
+        self.linear3 = nn.Linear(hidden_dim, 1)
 
         # Q2 architecture
-        self.linear5 = nn.Linear(num_inputs + num_actions, hidden_dim)
-        self.linear6 = nn.Linear(hidden_dim, hidden_dim)
-        self.linear7 = nn.Linear(hidden_dim, hidden_dim)
-        self.linear8 = nn.Linear(hidden_dim, 1)
+        self.linear4 = nn.Linear(num_inputs + num_actions, hidden_dim)
+        self.linear5 = nn.Linear(hidden_dim, hidden_dim)
+        self.linear6 = nn.Linear(hidden_dim, 1)
 
         self.apply(weights_init_)
 
@@ -54,13 +52,11 @@ class QNetworkFF(nn.Module):
         
         x1 = F.relu(self.linear1(xu))
         x1 = F.relu(self.linear2(x1))
-        x1 = F.relu(self.linear3(x1))
-        x1 = self.linear4(x1)
+        x1 = self.linear3(x1)
 
-        x2 = F.relu(self.linear5(xu))
-        x2 = F.relu(self.linear6(x2))
-        x2 = F.relu(self.linear7(x2))
-        x2 = self.linear8(x2)
+        x2 = F.relu(self.linear4(xu))
+        x2 = F.relu(self.linear5(x2))
+        x2 = self.linear6(x2)
 
         return x1, x2
 
@@ -127,10 +123,7 @@ class GaussianPolicyRNN(nn.Module):
         super(GaussianPolicyRNN, self).__init__()
 
         self.linear1 = nn.Linear(num_inputs, hidden_dim)
-        self.linear2 = nn.Linear(hidden_dim, hidden_dim)
         self.lstm = nn.RNN(hidden_dim, hidden_dim, batch_first=True)
-        self.linear3 = nn.Linear(hidden_dim, hidden_dim)
-        self.linear4 = nn.Linear(hidden_dim, hidden_dim)
 
         self.mean_linear = nn.Linear(hidden_dim, num_actions)
         self.log_std_linear = nn.Linear(hidden_dim, num_actions)
@@ -150,27 +143,22 @@ class GaussianPolicyRNN(nn.Module):
 
     def forward(self, state, h_prev, c_prev, sampling, len_seq= None):
 
-        #x = F.relu(F.tanh(self.linear1(state)))
+        x = F.relu(F.tanh(self.linear1(state)))
         #x = F.tanh(self.linear1(state))
-        x = F.relu(self.linear1(state))
-        x = F.relu(self.linear2(x))
 
         if sampling == False:
             assert len_seq!=None, "Proved the len_seq"
-
             x = pack_padded_sequence(x, len_seq, batch_first= True, enforce_sorted= False)
 
         x, (h_current) = self.lstm(x, (h_prev))
-        x = F.relu(self.linear3(x))
-        x = F.relu(self.linear4(x))
 
         if sampling == False:
            x, len_x_seq = pad_packed_sequence(x, batch_first= True)
 
         if sampling == True:
             x = x.squeeze(1)
-        
-        #x = F.relu(x)
+
+        x = F.relu(x)
         mean = F.tanh(self.mean_linear(x))
         #mean = self.mean_linear(x)
         log_std = self.log_std_linear(x)
@@ -217,10 +205,8 @@ class GaussianPolicyRNN(nn.Module):
 
     def forward_for_simple_dynamics(self, state, h_prev, c_prev, sampling, len_seq= None):
 
-        #x = F.relu(F.tanh(self.linear1(state)))
+        x = F.relu(F.tanh(self.linear1(state)))
         #x = F.tanh(self.linear1(state))
-        x = F.relu(self.linear1(state))
-        x = F.relu(self.linear2(x))
 
         #Tap the output of the first linear layer
         x_l1 = x
@@ -232,13 +218,11 @@ class GaussianPolicyRNN(nn.Module):
             x = pack_padded_sequence(x, len_seq, batch_first= True, enforce_sorted= False)
 
         x, (h_current) = self.lstm(x, (h_prev))
-        x = F.relu(self.linear3(x))
-        x = F.relu(self.linear4(x))
 
         if sampling == False:
            x, len_x_seq = pad_packed_sequence(x, batch_first= True)
 
-        #x = F.relu(x)
+        x = F.relu(x)
         return x, x_l1
 
     def to(self, device):

@@ -244,8 +244,6 @@ def main():
                         help='Critic Type: QNetworkLSTM | QNetworkFF, use QNetworkFF only with GaussianRNN')
     parser.add_argument('--replay_type', type=str, default='ReplayLSTM',
                         help='Critic Type: ReplayLSTM | ReplayRNN, use depends on the type of policy selected')
-    parser.add_argument('--multi_loss', type=bool, default=False,
-                        help='Whether to use multiple losses (only for RNN policy)')
     parser.add_argument('--two_speeds', type=bool, default=False,
                         help='Only train on slow an medium speed, leave fast for testing')
     parser.add_argument('--cost_scale', type=float, default=0.5, metavar='G',

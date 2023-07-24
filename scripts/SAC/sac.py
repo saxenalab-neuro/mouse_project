@@ -104,46 +104,45 @@ class SAC(object):
 
         policy_loss = ((self.alpha * log_prob_bat) - min_qf_pi).mean() # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]
 
-        if self.multiple_losses:
-            # Sample the hidden weights of the RNN
-            J_lstm_w = self.policy.lstm.weight_hh_l0        #These weights would be of the size (hidden_dim, hidden_dim)
+        # Sample the hidden weights of the RNN
+        J_lstm_w = self.policy.lstm.weight_hh_l0        #These weights would be of the size (hidden_dim, hidden_dim)
 
-            #Sample the output of the RNN for the policy_state_batch
-            lstm_out_r, _ = self.policy.forward_for_simple_dynamics(policy_state_batch, h0, c0, sampling=False, len_seq= len_seq)
-            lstm_out_r = lstm_out_r.reshape(-1, lstm_out_r.size()[-1])[mask_seq]
+        #Sample the output of the RNN for the policy_state_batch
+        lstm_out_r, _ = self.policy.forward_for_simple_dynamics(policy_state_batch, h0, c0, sampling=False, len_seq= len_seq)
+        lstm_out_r = lstm_out_r.reshape(-1, lstm_out_r.size()[-1])[mask_seq]
 
-            #Reshape the policy hidden weights vector
-            J_lstm_w = J_lstm_w.unsqueeze(0).repeat(lstm_out_r.size()[0], 1, 1)
-            lstm_out_r = 1 - torch.pow(lstm_out_r, 2)
+        #Reshape the policy hidden weights vector
+        J_lstm_w = J_lstm_w.unsqueeze(0).repeat(lstm_out_r.size()[0], 1, 1)
+        lstm_out_r = 1 - torch.pow(lstm_out_r, 2)
 
-            R_j = torch.mul(J_lstm_w, lstm_out_r.unsqueeze(-1))
+        R_j = torch.mul(J_lstm_w, lstm_out_r.unsqueeze(-1))
 
-            policy_loss_2 = torch.norm(R_j)**2
+        policy_loss_2 = torch.norm(R_j)**2
 
-            #Find the loss encouraging the minimization of the firing rates for the linear and the RNN layer
-            #Sample the output of the RNN for the policy_state_batch
-            lstm_out_r, linear_out = self.policy.forward_for_simple_dynamics(policy_state_batch, h0, c0, sampling=False, len_seq= len_seq)
-            lstm_out_r = lstm_out_r.reshape(-1, lstm_out_r.size()[-1])[mask_seq]
-            linear_out = linear_out.reshape(-1, linear_out.size()[-1])[mask_seq]
+        #Find the loss encouraging the minimization of the firing rates for the linear and the RNN layer
+        #Sample the output of the RNN for the policy_state_batch
+        lstm_out_r, linear_out = self.policy.forward_for_simple_dynamics(policy_state_batch, h0, c0, sampling=False, len_seq= len_seq)
+        lstm_out_r = lstm_out_r.reshape(-1, lstm_out_r.size()[-1])[mask_seq]
+        linear_out = linear_out.reshape(-1, linear_out.size()[-1])[mask_seq]
 
-            mean_out_emg, _, _, _, _ = self.policy.forward(policy_state_batch, h0, c0, sampling=False, len_seq=len_seq)
-            mean_out_emg = mean_out_emg.reshape(-1, mean_out_emg.size()[-1])[mask_seq]
+        mean_out_emg, _, _, _, _ = self.policy.forward(policy_state_batch, h0, c0, sampling=False, len_seq=len_seq)
+        mean_out_emg = mean_out_emg.reshape(-1, mean_out_emg.size()[-1])[mask_seq]
 
-            policy_loss_3 = torch.norm(lstm_out_r)**2 + torch.norm(linear_out)**2 + torch.norm(mean_out_emg)**2
+        policy_loss_3 = torch.norm(lstm_out_r)**2 + torch.norm(linear_out)**2 + torch.norm(mean_out_emg)**2
 
-            #Find the loss encouraging the minimization of the input and output weights of the LSTM(RNN) and the layers downstream
-            #and upstream of the LSTM
-            #Sample the input weights of the RNN
-            J_lstm_i = self.policy.lstm.weight_ih_l0
-            J_in1 = self.policy.linear1.weight
+        #Find the loss encouraging the minimization of the input and output weights of the LSTM(RNN) and the layers downstream
+        #and upstream of the LSTM
+        #Sample the input weights of the RNN
+        J_lstm_i = self.policy.lstm.weight_ih_l0
+        J_in1 = self.policy.linear1.weight
 
-            #Sample the output weights
-            # J_out = self.policy.linear2.weight
-            J_out1 = self.policy.mean_linear.weight
+        #Sample the output weights
+        # J_out = self.policy.linear2.weight
+        J_out1 = self.policy.mean_linear.weight
 
-            policy_loss_4 = torch.norm(J_in1)**2 + torch.norm(J_lstm_i)**2 + torch.norm(J_out1)**2 
+        policy_loss_4 = torch.norm(J_in1)**2 + torch.norm(J_lstm_i)**2 + torch.norm(J_out1)**2 
 
-            policy_loss += (0.001*(policy_loss_2)) + (0.01*(policy_loss_3)) + (0.03*(policy_loss_4))
+        policy_loss += (0.001*(policy_loss_2)) + (0.01*(policy_loss_3)) + (0.03*(policy_loss_4))
 
         self.policy_optim.zero_grad()
         policy_loss.backward()
