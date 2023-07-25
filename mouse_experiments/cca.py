@@ -7,6 +7,7 @@ from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.metrics import r2_score
 import seaborn as sns
 from sklearn.decomposition import PCA
+from scipy.ndimage import gaussian_filter1d
 import argparse
 
 #Load the experimental activities
@@ -48,10 +49,14 @@ def main():
         A_exp = exp_alt_slow
         A_agent = agent_slow
 
-    # PC_agent = PCA(n_components= 10)
+
+    PC_agent = PCA(n_components= 10)
     PC_exp = PCA(n_components= 10)
-    #
-    # A_agent = PC_agent.fit_transform(A_agent)
+
+    A_agent = gaussian_filter1d(A_agent.T, 20)
+    A_agent = A_agent.T
+    A_agent = PC_agent.fit_transform(A_agent)
+
     A_exp = PC_exp.fit_transform(A_exp)
 
     cca = CCA(n_components=10)
@@ -60,8 +65,6 @@ def main():
     # print(U_c.shape)
     # result = np.corrcoef(U_c[:,9], V_c[:,9])#.diagonal(offset=1)
     U_prime = cca.inverse_transform(V_c)
-    print(U_prime.shape)
-
     plt.figure(figsize= (6, 6))
 
     for k in range(10):

@@ -104,6 +104,11 @@ def train_episode(mouseEnv, agent, policy_memory, episode_reward, episode_steps,
     state = mouseEnv.get_cur_state()
     ep_trajectory = []
 
+    policy_loss_tracker = []
+    policy_loss_2_tracker = []
+    policy_loss_3_tracker = []
+    policy_loss_4_tracker = []
+
     #num_layers specified in the policy model 
     h_prev = torch.zeros(size=(1, 1, args.hidden_size))
     c_prev = torch.zeros(size=(1, 1, args.hidden_size))
@@ -120,12 +125,16 @@ def train_episode(mouseEnv, agent, policy_memory, episode_reward, episode_steps,
             for j in range(args.updates_per_step):
                 # Update parameters of all the networks
                 if args.policy == 'GaussianRNN' and args.critic == 'QNetworkFF':
-                    critic_1_loss, critic_2_loss, policy_loss, ent_loss, alpha = agent.update_parametersRNN(policy_memory, args.policy_batch_size)
+                    critic_1_loss, critic_2_loss, policy_loss, policy_loss_2, policy_loss_3, policy_loss_4, ent_loss, alpha = agent.update_parametersRNN(policy_memory, args.policy_batch_size)
                 elif args.policy == 'GaussianLSTM' and args.critic == 'QNetworkLSTM':
                     critic_1_loss, critic_2_loss, policy_loss, ent_loss, alpha = agent.update_parametersLSTM(policy_memory, args.policy_batch_size)
                 else:
                     raise Exception("Incompatible Policy and QNetwork, please use (GaussianRNN, QNetworkFF) or (GaussianLSTM, QNetworkLSTM)")
-                #policy_loss_tracker.append(policy_loss)
+
+                policy_loss_tracker.append(policy_loss)
+                policy_loss_2_tracker.append(policy_loss_2)
+                policy_loss_3_tracker.append(policy_loss_3)
+                policy_loss_4_tracker.append(policy_loss_4)
 
         ### TRACKING REWARD + EXPERIENCE TUPLE###
         next_state, reward, done = mouseEnv.step(action, i)
@@ -148,7 +157,7 @@ def train_episode(mouseEnv, agent, policy_memory, episode_reward, episode_steps,
         if done:
             break
 
-    return ep_trajectory, episode_reward, episode_steps
+    return ep_trajectory, episode_reward, episode_steps, policy_loss_tracker, policy_loss_2_tracker, policy_loss_3_tracker, policy_loss_4_tracker
 
 def test(mouseEnv, agent, episode_reward, episode_steps, args):
 
@@ -289,9 +298,6 @@ def main():
     reward_tracker_fast = []
     reward_tracker_1 = []
 
-    critic_loss_tracker = []
-    policy_loss_tracker = []
-
     highest_reward = 0
 
     ### DATA SET LOADING/PROCESSING ###
@@ -303,6 +309,11 @@ def main():
     highest_reward_1 = -50
     highest_reward_fast = -50
     highest_reward_slow = -50
+
+    policy_loss_tracker = []
+    policy_loss_2_tracker = []
+    policy_loss_3_tracker = []
+    policy_loss_4_tracker = []
 
     ### BEGIN TRAINING LOOP
     for i_episode in itertools.count(1):
@@ -326,7 +337,19 @@ def main():
                 continue
 
             # Run the episode
-            ep_trajectory, episode_reward, episode_steps = train_episode(mouseEnv, agent, policy_memory, episode_reward, episode_steps, args)
+            ep_trajectory, episode_reward, episode_steps, policy_loss, policy_loss_2, policy_loss_3, policy_loss_4 = train_episode(mouseEnv, agent, policy_memory, episode_reward, episode_steps, args)
+
+            if len(policy_memory.buffer) > args.policy_batch_size:
+
+                policy_loss_tracker.append(policy_loss)
+                policy_loss_2_tracker.append(policy_loss_2)
+                policy_loss_3_tracker.append(policy_loss_3)
+                policy_loss_4_tracker.append(policy_loss_4)
+
+                np.save(f'mouse_experiments/data/policy_loss_{args.model_save_name}', policy_loss_tracker)
+                np.save(f'mouse_experiments/data/policy_loss_2_{args.model_save_name}', policy_loss_2_tracker)
+                np.save(f'mouse_experiments/data/policy_loss_3_{args.model_save_name}', policy_loss_3_tracker)
+                np.save(f'mouse_experiments/data/policy_loss_4_{args.model_save_name}', policy_loss_4_tracker)
 
             ### SAVING MODELS + TRACKING VARIABLES ###
             if episode_reward > highest_reward:

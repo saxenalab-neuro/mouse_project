@@ -13,7 +13,6 @@ class SAC(object):
         self.tau = args.tau
         self.alpha = args.alpha
         self.hidden_size= args.hidden_size
-        self.multiple_losses = args.multi_loss
         self.policy_type = args.policy
         self.automatic_entropy_tuning = args.automatic_entropy_tuning
         self.device = torch.device("cuda" if args.cuda else "cpu")
@@ -65,7 +64,6 @@ class SAC(object):
         # Sample a batch from memory
         state_batch, action_batch, reward_batch, next_state_batch, mask_batch, h_batch, c_batch, policy_state_batch = policy_memory.sample(batch_size=policy_batch_size)
 
-        
         state_batch = torch.FloatTensor(state_batch).to(self.device)
         next_state_batch = torch.FloatTensor(next_state_batch).to(self.device)
         action_batch = torch.FloatTensor(action_batch).to(self.device)
@@ -164,7 +162,7 @@ class SAC(object):
 
         soft_update(self.critic_target, self.critic, self.tau)
 
-        return qf1_loss.item(), qf2_loss.item(), policy_loss.item(), alpha_loss.item(), alpha_tlogs.item()
+        return qf1_loss.item(), qf2_loss.item(), policy_loss.item(), policy_loss_2.item(), policy_loss_3.item(), policy_loss_4.item(), alpha_loss.item(), alpha_tlogs.item()
 
     def update_parametersLSTM(self, policy_memory, policy_batch_size):
         # Sample a batch from memory
