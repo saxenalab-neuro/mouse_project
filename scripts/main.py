@@ -6,7 +6,7 @@ import itertools
 import scipy.io
 import torch
 import matplotlib.pyplot as plt
-from scipy.interpolate import interp1d, CubicSpline, BarycentricInterpolator, PchipInterpolator, Akima1DInterpolator
+from scipy.interpolate import Akima1DInterpolator
 
 import farms_pylog as pylog
 import model_utils as model_utils
@@ -33,19 +33,6 @@ ctrl = [107, 108, 109, 110, 111, 113, 114]
 #RWrist_flexion - 114
 #RMetacarpus1_flexion - 115, use link (carpus) for pos
  
-### INTERPOLATION
-def interpolate(orig_data):
-
-    interpolated = []
-    for i in range(len(orig_data)-1):
-        interpolated.append(orig_data[i])
-        interpolated_point = (i + (i+1)) / 2
-        y = orig_data[i] + (interpolated_point - i) * ((orig_data[i+1]-orig_data[i])/((i+1)-i))
-        interpolated.append(y)
-    interpolated.append(orig_data[-1])
-
-    return interpolated
-
 def preprocess(cycles=1):
 
     ########################### Data_Fast ###############################
@@ -100,7 +87,6 @@ def train_episode(mouseEnv, agent, policy_memory, episode_reward, episode_steps,
 
     done = False
     ### GET INITAL STATE + RESET MODEL BY POSE
-    mouseEnv.reset(pose_file)
     state = mouseEnv.get_cur_state()
     ep_trajectory = []
 
@@ -124,15 +110,17 @@ def train_episode(mouseEnv, agent, policy_memory, episode_reward, episode_steps,
             # Number of updates per step in environment
             for j in range(args.updates_per_step):
                 # Update parameters of all the networks
-                if args.type == 'RNN':
+                if args.type == 'rnn':
                     critic_1_loss, critic_2_loss, policy_loss, policy_loss_2, policy_loss_3, policy_loss_4, ent_loss, alpha = agent.update_parameters(policy_memory, args.policy_batch_size)
-                elif args.type == 'LSTM':
+
+                    policy_loss_2_tracker.append(policy_loss_2)
+                    policy_loss_3_tracker.append(policy_loss_3)
+                    policy_loss_4_tracker.append(policy_loss_4)
+
+                elif args.type == 'lstm':
                     critic_1_loss, critic_2_loss, policy_loss, ent_loss, alpha = agent.update_parameters(policy_memory, args.policy_batch_size)
 
                 policy_loss_tracker.append(policy_loss)
-                policy_loss_2_tracker.append(policy_loss_2)
-                policy_loss_3_tracker.append(policy_loss_3)
-                policy_loss_4_tracker.append(policy_loss_4)
 
         ### TRACKING REWARD + EXPERIENCE TUPLE###
         next_state, reward, done = mouseEnv.step(action, i)
@@ -140,9 +128,9 @@ def train_episode(mouseEnv, agent, policy_memory, episode_reward, episode_steps,
 
         mask = 1 if episode_steps == mouseEnv._max_episode_steps else float(not done)
 
-        if args.type == 'RNN':
+        if args.type == 'rnn':
             ep_trajectory.append((state, action, reward, next_state, mask, h_current.squeeze(0).cpu().numpy(),  c_current.squeeze(0).cpu().numpy()))
-        elif args.type == 'LSTM':
+        elif args.type == 'lstm':
             ep_trajectory.append((state, action, np.array([reward]), next_state, np.array([mask]), h_prev.detach().cpu(), c_prev.detach().cpu(), h_current.detach().cpu(),  c_current.detach().cpu()))
 
         state = next_state
@@ -166,7 +154,6 @@ def test(mouseEnv, agent, episode_reward, episode_steps, args):
     lstm_activity = []
 
     ### GET INITAL STATE + RESET MODEL BY POSE
-    mouseEnv.reset(pose_file)
     state = mouseEnv.get_cur_state()
 
     #num_layers specified in the policy model 
@@ -186,6 +173,8 @@ def test(mouseEnv, agent, episode_reward, episode_steps, args):
 
         ### TRACKING REWARD + EXPERIENCE TUPLE###
         next_state, reward, done = mouseEnv.step(action, i)
+        if i == 0:
+            print(f'Next State: {next_state}\n')
         episode_reward += reward
 
         state = next_state
@@ -245,12 +234,12 @@ def main():
                         help='save models and optimizer during training')
     parser.add_argument('--model_save_name', type=str, default='',
                         help='name used to save the model with')
-    parser.add_argument('--type', type=str, default='RNN',
-                        help='There are two types: RNN or LSTM. RNN uses multiple losses, LSTM is original implementation')
+    parser.add_argument('--type', type=str, default='rnn',
+                        help='There are two types: rnn or lstm. RNN uses multiple losses, LSTM is original implementation')
     parser.add_argument('--two_speeds', type=bool, default=False,
                         help='Only train on slow an medium speed, leave fast for testing')
-    parser.add_argument('--cost_scale', type=float, default=0.5, metavar='G',
-                        help='scaling of the cost, default: 0.5')
+    parser.add_argument('--cost_scale', type=float, default=0.0, metavar='G',
+                        help='scaling of the cost, default: 0.0')
     parser.add_argument('--cycles', type=int, default=1, metavar='N',
                         help='Number of times to cycle the kinematics (Default: 1)')
     args = parser.parse_args()
@@ -267,10 +256,10 @@ def main():
     else:
         raise NotImplementedError
 
-    if args.type == 'RNN':
+    if args.type == 'rnn':
         policy_memory = PolicyReplayMemoryRNN(args.policy_replay_size, args.seed)
         agent = SACRNN(47, mouseEnv.action_space, args)
-    elif args.type == 'LSTM':
+    elif args.type == 'lstm':
         policy_memory = PolicyReplayMemoryLSTM(args.policy_replay_size, args.seed)
         agent = SACLSTM(47, mouseEnv.action_space, args)
     else:
@@ -316,6 +305,7 @@ def main():
         episode_reward = 0
         episode_steps = 0
 
+        mouseEnv.reset(pose_file)
         # Select the speed based on environment type
         if args.env_type == 'kin':
             mouseEnv._max_episode_steps = len(all_datasets[i_episode % 3])

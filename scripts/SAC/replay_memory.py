@@ -24,7 +24,7 @@ class PolicyReplayMemory:
 
 class PolicyReplayMemoryRNN(PolicyReplayMemory):
     def __init__(self, capacity, seed):
-        super(PolicyReplayMemoryRNN, self).__init__()
+        super(PolicyReplayMemoryRNN, self).__init__(capacity, seed)
 
     def sample(self, batch_size):
         batch = random.sample(self.buffer, batch_size)
@@ -36,9 +36,9 @@ class PolicyReplayMemoryRNN(PolicyReplayMemory):
 
         return state, action, reward, next_state, done, h_current, c_current, policy_state_batch
 
-class PolicyReplayMemoryLSTM:
+class PolicyReplayMemoryLSTM(PolicyReplayMemory):
     def __init__(self, capacity, seed):
-        super(PolicyReplayMemoryRNN, self).__init__()
+        super(PolicyReplayMemoryLSTM, self).__init__(capacity, seed)
 
     def sample(self, batch_size):
         batch = random.sample(self.buffer, batch_size)

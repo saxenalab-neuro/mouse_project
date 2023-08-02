@@ -123,7 +123,7 @@ class GaussianPolicyRNN(nn.Module):
         super(GaussianPolicyRNN, self).__init__()
 
         self.linear1 = nn.Linear(num_inputs, hidden_dim)
-        self.rnn = nn.RNN(hidden_dim, hidden_dim, batch_first=True)
+        self.lstm = nn.RNN(hidden_dim, hidden_dim, batch_first=True)
 
         self.mean_linear = nn.Linear(hidden_dim, num_actions)
         self.log_std_linear = nn.Linear(hidden_dim, num_actions)
@@ -150,7 +150,7 @@ class GaussianPolicyRNN(nn.Module):
             assert len_seq!=None, "Proved the len_seq"
             x = pack_padded_sequence(x, len_seq, batch_first= True, enforce_sorted= False)
 
-        x, (h_current) = self.rnn(x, (h_prev))
+        x, (h_current) = self.lstm(x, (h_prev))
 
         if sampling == False:
            x, len_x_seq = pad_packed_sequence(x, batch_first= True)
@@ -217,7 +217,7 @@ class GaussianPolicyRNN(nn.Module):
 
             x = pack_padded_sequence(x, len_seq, batch_first= True, enforce_sorted= False)
 
-        x, (h_current) = self.rnn(x, (h_prev))
+        x, (h_current) = self.lstm(x, (h_prev))
 
         if sampling == False:
            x, len_x_seq = pad_packed_sequence(x, batch_first= True)
