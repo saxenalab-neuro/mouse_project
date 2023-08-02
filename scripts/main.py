@@ -33,7 +33,9 @@ ctrl = [107, 108, 109, 110, 111, 113, 114]
 #RWrist_flexion - 114
 #RMetacarpus1_flexion - 115, use link (carpus) for pos
  
-def preprocess(cycles=1):
+def preprocess(cycles=1, stable_points=50):
+
+    stabilize = [-13.45250312] * stable_points
 
     ########################### Data_Fast ###############################
     mat = scipy.io.loadmat('data/kinematics_session_mean_alt_fast.mat')
@@ -50,7 +52,8 @@ def preprocess(cycles=1):
         y_interp = cs(x_interp)
         # Get the new interpolated kinematics without repeating points
         data_fast = [*data_fast_orig, *y_interp[2:-2]] * cycles
-        np.save('mouse_experiments/data/interp_fast', data_fast)
+    data_fast = [*stabilize, *data_fast]
+    np.save('mouse_experiments/data/interp_fast', data_fast)
 
     # Data must start and end at same spot or there is jump
     ########################### Data_Slow ###############################
@@ -65,7 +68,8 @@ def preprocess(cycles=1):
         x_interp = np.linspace(len(data_slow_orig)-1, len(data_slow_orig), 5)
         y_interp = cs(x_interp)
         data_slow = [*data_slow_orig, *y_interp[1:-1]] * cycles
-        np.save('mouse_experiments/data/interp_slow', data_slow)
+    data_slow = [*stabilize, *data_slow]
+    np.save('mouse_experiments/data/interp_slow', data_slow)
 
     ############################ Data_1 ##############################
     mat = scipy.io.loadmat('data/kinematics_session_mean_alt1.mat')
@@ -79,7 +83,8 @@ def preprocess(cycles=1):
         x_interp = np.linspace(len(data_1_orig)-1, len(data_1_orig), 3)
         y_interp = cs(x_interp)
         data_1 = [*data_1_orig, *y_interp[1:-1]] * cycles
-        np.save('mouse_experiments/data/interp_1', data_1)
+    data_1 = [*stabilize, *data_1]
+    np.save('mouse_experiments/data/interp_1', data_1)
 
     return data_fast, data_slow, data_1
 
