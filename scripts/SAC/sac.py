@@ -17,50 +17,81 @@ class SAC(object):
         self.automatic_entropy_tuning = args.automatic_entropy_tuning
         self.device = torch.device("cuda" if args.cuda else "cpu")
 
-        # Select which Q network to use
-        if args.critic == 'QNetworkLSTM':
-            self.critic = QNetworkLSTM(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
-            self.critic_target = QNetworkLSTM(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
-            hard_update(self.critic_target, self.critic)
-        elif args.critic == 'QNetworkFF':
-            self.critic = QNetworkFF(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
-            self.critic_target = QNetworkFF(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
-            hard_update(self.critic_target, self.critic)
-        else:
-            raise Exception("Critic selected not available, please choose QNetworkFF or QNetworkLSTM")
-
-        # optimizer for Q network
-        self.critic_optim = Adam(self.critic.parameters(), lr=args.lr)
-
         # Target Entropy = −dim(A) (e.g. , -6 for HalfCheetah-v2) as given in the paper
         if args.automatic_entropy_tuning:
             self.target_entropy = -torch.prod(torch.Tensor(action_space.shape).to(self.device)).item()
             self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
             self.alpha_optim = Adam([self.log_alpha], lr=args.lr)
 
-        # select which policy to use
-        if args.policy == "GaussianLSTM":
-            self.policy = GaussianPolicyLSTM(num_inputs, action_space.shape[0], args.hidden_size, action_space=None).to(self.device)
-        elif args.policy == "GaussianRNN":
-            self.policy = GaussianPolicyRNN(num_inputs, action_space.shape[0], args.hidden_size, action_space=None).to(self.device)
-        else:
-            raise Exception("Policy selected not available, please choose GaussianRNN or GaussianLSTM")
+    def select_action(self, state, h_prev, c_prev, evaluate=False):
+        pass
 
+    def update_parametersRNN(self, policy_memory, policy_batch_size):
+        pass
+
+    # Save model parameters
+    def save_model(self, env_name, suffix="", actor_path=None, critic_path=None):
+        if not os.path.exists('models/'):
+            os.makedirs('models/')
+
+        if actor_path is None:
+            actor_path = "models/sac_actor_{}_{}".format(env_name, suffix)
+        if critic_path is None:
+            critic_path = "models/sac_critic_{}_{}".format(env_name, suffix)
+        print('Saving models to {} and {}'.format(actor_path, critic_path))
+        torch.save(self.policy.state_dict(), actor_path)
+        torch.save(self.critic.state_dict(), critic_path)
+
+    # Load model parameters
+    def load_model(self, actor_path, critic_path):
+        print('Loading models from {} and {}'.format(actor_path, critic_path))
+        if actor_path is not None:
+            self.policy.load_state_dict(torch.load(actor_path))
+        if critic_path is not None:
+            self.critic.load_state_dict(torch.load(critic_path))
+
+    #filter_padded takes in a padded sequence of size (B, L_max, H) and corresponding sequence lengths, and returns a tensor of size [max(seq_lens), H]
+    #after filtering redundant paddings. 
+    def filter_padded(self, padded_seq, seq_lens):
+        #   padded_seq = a tensor of size (batch_size, max_seq_len, input_dimension) i.e. (B, L_max, H) representing a padded object
+        #   seq_lens = a list contatining the length of individual sequences in the sequence object before padding
+        seq_max = max(seq_lens)
+        #reshape padded sequence to (B*L_max, input_dimension)
+        t = padded_seq.reshape(padded_seq.shape[0]*padded_seq.shape[1], padded_seq.shape[2])
+        iter_max = int(t.shape[0]/seq_max)
+        for iter1 in range(iter_max):
+            k = [item for item in range(iter1*seq_max, (iter1+1)*seq_max)]
+            k = k[:seq_lens[iter1]]
+            if iter1 == 0:
+                out_t = t[k]
+            else:
+                out_t = torch.cat((out_t, t[k]), dim=0)
+        return out_t
+
+class SACRNN(SAC):
+    def __init__(self, num_inputs, action_space, args):
+        super(SACRNN, self).__init__()
+
+        self.critic = QNetworkFF(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
+        self.critic_target = QNetworkFF(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
+        hard_update(self.critic_target, self.critic)
+
+        self.critic_optim = Adam(self.critic.parameters(), lr=args.lr)
+
+        self.policy = GaussianPolicyRNN(num_inputs, action_space.shape[0], args.hidden_size, action_space=None).to(self.device)
         self.policy_optim = Adam(self.policy.parameters(), lr=args.lr)
 
     def select_action(self, state, h_prev, c_prev, evaluate=False):
+
         state = torch.FloatTensor(state).to(self.device).unsqueeze(0).unsqueeze(0)
         h_prev = h_prev.to(self.device)
         c_prev = c_prev.to(self.device)
         
-        if self.policy_type == 'GaussianLSTM':
-            action, _, _, h_current, c_current, lstm_out = self.policy.sample(state, h_prev, c_prev, sampling=True)
-        elif self.policy_type == 'GaussianRNN':
-            action, _, _, h_current, c_current, _, lstm_out = self.policy.sample(state, h_prev, c_prev, sampling=True, len_seq=None)
+        action, _, _, h_current, c_current, _, lstm_out = self.policy.sample(state, h_prev, c_prev, sampling=True, len_seq=None)
 
         return action.detach().cpu().numpy()[0], h_current.detach(), c_current.detach(), lstm_out.detach().cpu().numpy()
 
-    def update_parametersRNN(self, policy_memory, policy_batch_size):
+    def update_parameters(self, policy_memory, policy_batch_size):
         # Sample a batch from memory
         state_batch, action_batch, reward_batch, next_state_batch, mask_batch, h_batch, c_batch, policy_state_batch = policy_memory.sample(batch_size=policy_batch_size)
 
@@ -140,7 +171,7 @@ class SAC(object):
 
         policy_loss_4 = torch.norm(J_in1)**2 + torch.norm(J_lstm_i)**2 + torch.norm(J_out1)**2 
 
-        policy_loss += (0.001*(policy_loss_2)) + (0.01*(policy_loss_3)) + (0.03*(policy_loss_4))
+        policy_loss += (0.001*(policy_loss_2)) + (0.001*(policy_loss_3)) + (0.003*(policy_loss_4))
 
         self.policy_optim.zero_grad()
         policy_loss.backward()
@@ -164,7 +195,30 @@ class SAC(object):
 
         return qf1_loss.item(), qf2_loss.item(), policy_loss.item(), policy_loss_2.item(), policy_loss_3.item(), policy_loss_4.item(), alpha_loss.item(), alpha_tlogs.item()
 
-    def update_parametersLSTM(self, policy_memory, policy_batch_size):
+class SACLSTM(SAC):
+    def __init__(self, num_inputs, action_space, args):
+        super(SACLSTM, self).__init__()
+
+        self.critic = QNetworkLSTM(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
+        self.critic_target = QNetworkLSTM(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
+        hard_update(self.critic_target, self.critic)
+
+        self.critic_optim = Adam(self.critic.parameters(), lr=args.lr)
+
+        self.policy = GaussianPolicyLSTM(num_inputs, action_space.shape[0], args.hidden_size, action_space=None).to(self.device)
+        self.policy_optim = Adam(self.policy.parameters(), lr=args.lr)
+    
+    def select_action(self, state, h_prev, c_prev, evaluate=False):
+
+        state = torch.FloatTensor(state).to(self.device).unsqueeze(0).unsqueeze(0)
+        h_prev = h_prev.to(self.device)
+        c_prev = c_prev.to(self.device)
+        
+        action, _, _, h_current, c_current, lstm_out = self.policy.sample(state, h_prev, c_prev, sampling=True)
+
+        return action.detach().cpu().numpy()[0], h_current.detach(), c_current.detach(), lstm_out.detach().cpu().numpy()
+
+    def update_parameters(self, policy_memory, policy_batch_size):
         # Sample a batch from memory
         #state_batch_p means padded_batch state_batch1 in notes
         #state_batch means packed batch state_batch in notes
@@ -264,42 +318,3 @@ class SAC(object):
         soft_update(self.critic_target, self.critic, self.tau)
 
         return qf1_loss.item(), qf2_loss.item(), policy_loss.item(), alpha_loss.item(), alpha_tlogs.item()
-
-    # Save model parameters
-    def save_model(self, env_name, suffix="", actor_path=None, critic_path=None):
-        if not os.path.exists('models/'):
-            os.makedirs('models/')
-
-        if actor_path is None:
-            actor_path = "models/sac_actor_{}_{}".format(env_name, suffix)
-        if critic_path is None:
-            critic_path = "models/sac_critic_{}_{}".format(env_name, suffix)
-        print('Saving models to {} and {}'.format(actor_path, critic_path))
-        torch.save(self.policy.state_dict(), actor_path)
-        torch.save(self.critic.state_dict(), critic_path)
-
-    # Load model parameters
-    def load_model(self, actor_path, critic_path):
-        print('Loading models from {} and {}'.format(actor_path, critic_path))
-        if actor_path is not None:
-            self.policy.load_state_dict(torch.load(actor_path))
-        if critic_path is not None:
-            self.critic.load_state_dict(torch.load(critic_path))
-
-    #filter_padded takes in a padded sequence of size (B, L_max, H) and corresponding sequence lengths, and returns a tensor of size [max(seq_lens), H]
-    #after filtering redundant paddings. 
-    def filter_padded(self, padded_seq, seq_lens):
-        #   padded_seq = a tensor of size (batch_size, max_seq_len, input_dimension) i.e. (B, L_max, H) representing a padded object
-        #   seq_lens = a list contatining the length of individual sequences in the sequence object before padding
-        seq_max = max(seq_lens)
-        #reshape padded sequence to (B*L_max, input_dimension)
-        t = padded_seq.reshape(padded_seq.shape[0]*padded_seq.shape[1], padded_seq.shape[2])
-        iter_max = int(t.shape[0]/seq_max)
-        for iter1 in range(iter_max):
-            k = [item for item in range(iter1*seq_max, (iter1+1)*seq_max)]
-            k = k[:seq_lens[iter1]]
-            if iter1 == 0:
-                out_t = t[k]
-            else:
-                out_t = torch.cat((out_t, t[k]), dim=0)
-        return out_t

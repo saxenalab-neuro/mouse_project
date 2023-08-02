@@ -12,7 +12,7 @@ import farms_pylog as pylog
 import model_utils as model_utils
 from Mouse_RL_Environment import Mouse_Env, Mouse_Env_Simulated
 from SAC.replay_memory import PolicyReplayMemoryRNN, PolicyReplayMemoryLSTM
-from SAC.sac import SAC
+from SAC.sac import SAC, SACRNN, SACLSTM
 
 file_path = "model_utilities/mouse_fixed.sdf" # mouse model, body fixed except for right arm
 pose_file = "model_utilities/right_forelimb_pose.yaml" # pose file for original pose
@@ -124,12 +124,10 @@ def train_episode(mouseEnv, agent, policy_memory, episode_reward, episode_steps,
             # Number of updates per step in environment
             for j in range(args.updates_per_step):
                 # Update parameters of all the networks
-                if args.policy == 'GaussianRNN' and args.critic == 'QNetworkFF':
-                    critic_1_loss, critic_2_loss, policy_loss, policy_loss_2, policy_loss_3, policy_loss_4, ent_loss, alpha = agent.update_parametersRNN(policy_memory, args.policy_batch_size)
-                elif args.policy == 'GaussianLSTM' and args.critic == 'QNetworkLSTM':
-                    critic_1_loss, critic_2_loss, policy_loss, ent_loss, alpha = agent.update_parametersLSTM(policy_memory, args.policy_batch_size)
-                else:
-                    raise Exception("Incompatible Policy and QNetwork, please use (GaussianRNN, QNetworkFF) or (GaussianLSTM, QNetworkLSTM)")
+                if args.type == 'RNN':
+                    critic_1_loss, critic_2_loss, policy_loss, policy_loss_2, policy_loss_3, policy_loss_4, ent_loss, alpha = agent.update_parameters(policy_memory, args.policy_batch_size)
+                elif args.type == 'LSTM':
+                    critic_1_loss, critic_2_loss, policy_loss, ent_loss, alpha = agent.update_parameters(policy_memory, args.policy_batch_size)
 
                 policy_loss_tracker.append(policy_loss)
                 policy_loss_2_tracker.append(policy_loss_2)
@@ -142,9 +140,9 @@ def train_episode(mouseEnv, agent, policy_memory, episode_reward, episode_steps,
 
         mask = 1 if episode_steps == mouseEnv._max_episode_steps else float(not done)
 
-        if args.policy == 'GaussianRNN' and args.critic == 'QNetworkFF':
+        if args.type == 'RNN':
             ep_trajectory.append((state, action, reward, next_state, mask, h_current.squeeze(0).cpu().numpy(),  c_current.squeeze(0).cpu().numpy()))
-        elif args.policy == 'GaussianLSTM' and args.critic == 'QNetworkLSTM':
+        elif args.type == 'LSTM':
             ep_trajectory.append((state, action, np.array([reward]), next_state, np.array([mask]), h_prev.detach().cpu(), c_prev.detach().cpu(), h_current.detach().cpu(),  c_current.detach().cpu()))
 
         state = next_state
@@ -247,12 +245,8 @@ def main():
                         help='save models and optimizer during training')
     parser.add_argument('--model_save_name', type=str, default='',
                         help='name used to save the model with')
-    parser.add_argument('--policy', default="GaussianLSTM",
-                        help='Policy Type: GaussianLSTM | GaussianRNN | Deterministic (default: Gaussian)')
-    parser.add_argument('--critic', type=str, default='QNetworkLSTM',
-                        help='Critic Type: QNetworkLSTM | QNetworkFF, use QNetworkFF only with GaussianRNN')
-    parser.add_argument('--replay_type', type=str, default='ReplayLSTM',
-                        help='Critic Type: ReplayLSTM | ReplayRNN, use depends on the type of policy selected')
+    parser.add_argument('--type', type=str, default='RNN',
+                        help='There are two types: RNN or LSTM. RNN uses multiple losses, LSTM is original implementation')
     parser.add_argument('--two_speeds', type=bool, default=False,
                         help='Only train on slow an medium speed, leave fast for testing')
     parser.add_argument('--cost_scale', type=float, default=0.5, metavar='G',
@@ -271,16 +265,16 @@ def main():
     elif args.env_type == 'sim':
         mouseEnv = Mouse_Env_Simulated(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset, args.visualize, args.threshold, args.cost_scale)
     else:
-        raise Exception("Environment selected not available, please choose kin or sim")
+        raise NotImplementedError
 
-    agent = SAC(47, mouseEnv.action_space, args)
-
-    if args.replay_type == 'ReplayRNN':
-        policy_memory= PolicyReplayMemoryRNN(args.policy_replay_size, args.seed)
-    elif args.replay_type == 'ReplayLSTM':
-        policy_memory= PolicyReplayMemoryLSTM(args.policy_replay_size, args.seed)
+    if args.type == 'RNN':
+        policy_memory = PolicyReplayMemoryRNN(args.policy_replay_size, args.seed)
+        agent = SACRNN(47, mouseEnv.action_space, args)
+    elif args.type == 'LSTM':
+        policy_memory = PolicyReplayMemoryLSTM(args.policy_replay_size, args.seed)
+        agent = SACLSTM(47, mouseEnv.action_space, args)
     else:
-        raise Exception("Replay memory selected not available, please choose ReplayRNN or ReplayLSTM")
+        raise NotImplementedError
 
     if args.test_model:
         agent.critic.load_state_dict(torch.load(f'models/value_net_{args.model_save_name}.pth'))
@@ -288,6 +282,7 @@ def main():
 
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
+
     ### DISABLES CURRENT MOVEMENT ###
     model_utils.disable_control(mouseEnv.model)
     ### 1SEC REAL TIME = 1 ms SIMULATION ###

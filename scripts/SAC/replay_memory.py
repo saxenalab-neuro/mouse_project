@@ -3,7 +3,7 @@ import numpy as np
 from itertools import chain
 import torch
 
-class PolicyReplayMemoryRNN:
+class PolicyReplayMemory:
     def __init__(self, capacity, seed):
         random.seed(seed)
         self.capacity = capacity
@@ -17,6 +17,16 @@ class PolicyReplayMemoryRNN:
         self.position = (self.position + 1) % self.capacity
 
     def sample(self, batch_size):
+        pass
+
+    def __len__(self):
+        return len(self.buffer)
+
+class PolicyReplayMemoryRNN(PolicyReplayMemory):
+    def __init__(self, capacity, seed):
+        super(PolicyReplayMemoryRNN, self).__init__()
+
+    def sample(self, batch_size):
         batch = random.sample(self.buffer, batch_size)
         batch_list = list(chain(*batch))
         state, action, reward, next_state, done, h_current, c_current = map(np.stack, zip(*batch_list))
@@ -26,21 +36,9 @@ class PolicyReplayMemoryRNN:
 
         return state, action, reward, next_state, done, h_current, c_current, policy_state_batch
 
-    def __len__(self):
-        return len(self.buffer)
-
 class PolicyReplayMemoryLSTM:
     def __init__(self, capacity, seed):
-        random.seed(seed)
-        self.capacity = capacity
-        self.buffer = []
-        self.position = 0
-
-    def push(self, state):
-        if len(self.buffer) < self.capacity:
-            self.buffer.append(None)
-        self.buffer[self.position] = state
-        self.position = (self.position + 1) % self.capacity
+        super(PolicyReplayMemoryRNN, self).__init__()
 
     def sample(self, batch_size):
         batch = random.sample(self.buffer, batch_size)
@@ -79,8 +77,4 @@ class PolicyReplayMemoryLSTM:
         hidden_in = (hi_lst, ci_lst)
         hidden_out = (ho_lst, co_lst)       
 
-
         return state, action, reward, next_state, done, hidden_in, hidden_out
-
-    def __len__(self):
-        return len(self.buffer)
