@@ -33,9 +33,9 @@ ctrl = [107, 108, 109, 110, 111, 113, 114]
 #RWrist_flexion - 114
 #RMetacarpus1_flexion - 115, use link (carpus) for pos
  
-def preprocess(cycles=1, stable_points=50):
+def preprocess(cycles=1, stabilize=False):
 
-    stabilize = [-13.45250312] * stable_points
+    stable_points = [-13.45250312] * 50
 
     ########################### Data_Fast ###############################
     mat = scipy.io.loadmat('data/kinematics_session_mean_alt_fast.mat')
@@ -52,7 +52,7 @@ def preprocess(cycles=1, stable_points=50):
         y_interp = cs(x_interp)
         # Get the new interpolated kinematics without repeating points
         data_fast = [*data_fast_orig, *y_interp[2:-2]] * cycles
-    data_fast = [*stabilize, *data_fast]
+    data_fast = [*stable_points, *data_fast]
     np.save('mouse_experiments/data/interp_fast', data_fast)
 
     # Data must start and end at same spot or there is jump
@@ -68,7 +68,7 @@ def preprocess(cycles=1, stable_points=50):
         x_interp = np.linspace(len(data_slow_orig)-1, len(data_slow_orig), 5)
         y_interp = cs(x_interp)
         data_slow = [*data_slow_orig, *y_interp[1:-1]] * cycles
-    data_slow = [*stabilize, *data_slow]
+    data_slow = [*stable_points, *data_slow]
     np.save('mouse_experiments/data/interp_slow', data_slow)
 
     ############################ Data_1 ##############################
@@ -83,7 +83,7 @@ def preprocess(cycles=1, stable_points=50):
         x_interp = np.linspace(len(data_1_orig)-1, len(data_1_orig), 3)
         y_interp = cs(x_interp)
         data_1 = [*data_1_orig, *y_interp[1:-1]] * cycles
-    data_1 = [*stabilize, *data_1]
+    data_1 = [*stable_points, *data_1]
     np.save('mouse_experiments/data/interp_1', data_1)
 
     return data_fast, data_slow, data_1
@@ -243,6 +243,8 @@ def main():
                         help='There are two types: rnn or lstm. RNN uses multiple losses, LSTM is original implementation')
     parser.add_argument('--two_speeds', type=bool, default=False,
                         help='Only train on slow an medium speed, leave fast for testing')
+    parser.add_argument('--stabilize', type=bool, default=False,
+                        help='whether to have the mouse stabilize itself before movement')
     parser.add_argument('--cost_scale', type=float, default=0.0, metavar='G',
                         help='scaling of the cost, default: 0.0')
     parser.add_argument('--cycles', type=int, default=1, metavar='N',
@@ -290,7 +292,7 @@ def main():
     highest_reward = 0
 
     ### DATA SET LOADING/PROCESSING ###
-    data_fast, data_slow, data_1 = preprocess(args.cycles)
+    data_fast, data_slow, data_1 = preprocess(args.cycles, args.stabilize)
     all_datasets = [data_fast, data_slow, data_1]
     dataset_names = ['data_fast', 'data_slow', 'data_1']
     sim_timesteps = [150, 200, 250]
