@@ -51,8 +51,10 @@ def preprocess(cycles=1, stabilize=False):
         x_interp = np.linspace(len(data_fast_orig)-1, len(data_fast_orig), 14)
         y_interp = cs(x_interp)
         # Get the new interpolated kinematics without repeating points
+        fast_once_cycle_len = len([*data_fast_orig, *y_interp[2:-2]])
         data_fast = [*data_fast_orig, *y_interp[2:-2]] * cycles
-    data_fast = [*stable_points, *data_fast]
+    if stabilize:
+        data_fast = [*stable_points, *data_fast]
     np.save('mouse_experiments/data/interp_fast', data_fast)
 
     # Data must start and end at same spot or there is jump
@@ -67,8 +69,10 @@ def preprocess(cycles=1, stabilize=False):
         cs = Akima1DInterpolator(x, data_slow)
         x_interp = np.linspace(len(data_slow_orig)-1, len(data_slow_orig), 5)
         y_interp = cs(x_interp)
+        slow_once_cycle_len = len([*data_slow_orig, *y_interp[1:-1]])
         data_slow = [*data_slow_orig, *y_interp[1:-1]] * cycles
-    data_slow = [*stable_points, *data_slow]
+    if stabilize:
+        data_slow = [*stable_points, *data_slow]
     np.save('mouse_experiments/data/interp_slow', data_slow)
 
     ############################ Data_1 ##############################
@@ -82,13 +86,15 @@ def preprocess(cycles=1, stabilize=False):
         cs = Akima1DInterpolator(x, data_1)
         x_interp = np.linspace(len(data_1_orig)-1, len(data_1_orig), 3)
         y_interp = cs(x_interp)
+        med_once_cycle_len = len([*data_1_orig, *y_interp[1:-1]])
         data_1 = [*data_1_orig, *y_interp[1:-1]] * cycles
-    data_1 = [*stable_points, *data_1]
+    if stabilize:
+        data_1 = [*stable_points, *data_1]
     np.save('mouse_experiments/data/interp_1', data_1)
 
-    return data_fast, data_slow, data_1
+    return data_fast, data_slow, data_1, fast_once_cycle_len, slow_once_cycle_len, med_once_cycle_len
 
-def train_episode(mouseEnv, agent, policy_memory, episode_reward, episode_steps, args):
+def train_episode(mouseEnv, agent, policy_memory, episode_reward, episode_steps, one_cycle_len, args):
 
     done = False
     ### GET INITAL STATE + RESET MODEL BY POSE
@@ -109,6 +115,18 @@ def train_episode(mouseEnv, agent, policy_memory, episode_reward, episode_steps,
         
         with torch.no_grad():
             action, h_current, c_current, _ = agent.select_action(state, h_prev, c_prev)  # Sample action from policy
+        
+        # Change the threshold during training (must be for stabilization and cycles > 1)
+        # Just comment out for now if not using stabilization and cycles
+        if i < 50:
+            # smaller for stabilization
+            mouseEnv.threshold = 0.003
+        elif i >= 50 and i < one_cycle_len+50:
+            # larger for first cycle
+            mouseEnv.threshold = 0.0045
+        else:
+            # tighter for other cycles
+            mouseEnv.threshold = 0.0035
 
         ### SIMULATION ###
         if len(policy_memory.buffer) > args.policy_batch_size:
@@ -178,8 +196,6 @@ def test(mouseEnv, agent, episode_reward, episode_steps, args):
 
         ### TRACKING REWARD + EXPERIENCE TUPLE###
         next_state, reward, done = mouseEnv.step(action, i)
-        if i == 0:
-            print(f'Next State: {next_state}\n')
         episode_reward += reward
 
         state = next_state
@@ -219,7 +235,7 @@ def main():
                         help='batch size (default: 6)')
     parser.add_argument('--num_steps', type=int, default=1000001, metavar='N',
                         help='maximum number of steps (default: 1000000)')
-    parser.add_argument('--hidden_size', type=int, default=256, metavar='N',
+    parser.add_argument('--hidden_size', type=int, default=512, metavar='N',
                         help='hidden size (default: 1000)')
     parser.add_argument('--updates_per_step', type=int, default=1, metavar='N',
                         help='model updates per simulator step (default: 1)')
@@ -247,7 +263,7 @@ def main():
                         help='whether to have the mouse stabilize itself before movement')
     parser.add_argument('--cost_scale', type=float, default=0.0, metavar='G',
                         help='scaling of the cost, default: 0.0')
-    parser.add_argument('--cycles', type=int, default=1, metavar='N',
+    parser.add_argument('--cycles', type=int, default=3, metavar='N',
                         help='Number of times to cycle the kinematics (Default: 1)')
     args = parser.parse_args()
 
@@ -292,8 +308,9 @@ def main():
     highest_reward = 0
 
     ### DATA SET LOADING/PROCESSING ###
-    data_fast, data_slow, data_1 = preprocess(args.cycles, args.stabilize)
+    data_fast, data_slow, data_1, fast_cycle_len, slow_cycle_len, med_cycle_len = preprocess(args.cycles, args.stabilize)
     all_datasets = [data_fast, data_slow, data_1]
+    cycle_lens = [fast_cycle_len, slow_cycle_len, med_cycle_len]
     dataset_names = ['data_fast', 'data_slow', 'data_1']
     sim_timesteps = [150, 200, 250]
 
@@ -318,6 +335,7 @@ def main():
             mouseEnv._max_episode_steps = len(all_datasets[i_episode % 3])
             mouseEnv.x_pos = all_datasets[i_episode % 3]
             data_curr = dataset_names[i_episode % 3]
+            one_cycle_len = cycle_lens[i_episode % 3]
         elif args.env_type == 'sim':
             mouseEnv.timestep = sim_timesteps[i_episode % 3]
 
@@ -327,9 +345,9 @@ def main():
             # Skip the fast speed during training if only using two speeds
             if i_episode % 3 == 0 and args.two_speeds:
                 continue
-
+            
             # Run the episode
-            ep_trajectory, episode_reward, episode_steps, policy_loss, policy_loss_2, policy_loss_3, policy_loss_4 = train_episode(mouseEnv, agent, policy_memory, episode_reward, episode_steps, args)
+            ep_trajectory, episode_reward, episode_steps, policy_loss, policy_loss_2, policy_loss_3, policy_loss_4 = train_episode(mouseEnv, agent, policy_memory, episode_reward, episode_steps, one_cycle_len, args)
 
             if len(policy_memory.buffer) > args.policy_batch_size:
 
