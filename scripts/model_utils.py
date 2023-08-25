@@ -85,3 +85,6 @@ def sph2cart(az, el, r):
     y = rcos_theta * np.sin(az)
     z = r * np.sin(el)
     return x, y, z
+
+def get_speed(curr, prev, time=.001):
+    return abs(curr-prev) / time

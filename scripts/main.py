@@ -10,6 +10,7 @@ from scipy.interpolate import Akima1DInterpolator
 
 import farms_pylog as pylog
 import model_utils as model_utils
+from model_utils import get_speed
 from Mouse_RL_Environment import Mouse_Env, Mouse_Env_Simulated
 from SAC.replay_memory import PolicyReplayMemoryRNN, PolicyReplayMemoryLSTM
 from SAC.sac import SAC, SACRNN, SACLSTM
@@ -32,29 +33,31 @@ ctrl = [107, 108, 109, 110, 111, 113, 114]
 #RWrist_adduction - 113
 #RWrist_flexion - 114
 #RMetacarpus1_flexion - 115, use link (carpus) for pos
- 
-def preprocess(cycles=1, stabilize=False):
 
-    stable_points = [-13.45250312] * 50
+def get_avg_speed(data):
+    speed_list = []
+    for i in range(1, len(data)):
+        speed_list.append(get_speed(data[i], data[i-1]))
+    return sum(speed_list)/len(speed_list)
+ 
+def preprocess(cycles):
 
     ########################### Data_Fast ###############################
     mat = scipy.io.loadmat('data/kinematics_session_mean_alt_fast.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_fast_orig = data[231:401:1] * -1
-    data_fast_orig = [-13.45250312, *data_fast_orig[8:-1]]
+    data_fast_orig = [-13.452503122486936, *data_fast_orig[8:-1]]
     data_fast = [*data_fast_orig] * cycles
     if cycles > 1:
         # This needs to be done for smooth kinematics with cycles since they end at arbitrary points
         x = np.arange(0, len(data_fast))
         cs = Akima1DInterpolator(x, data_fast)
         # end point of kinematics and start point of next cycle
-        x_interp = np.linspace(len(data_fast_orig)-1, len(data_fast_orig), 14)
+        x_interp = np.linspace(len(data_fast_orig)-1, len(data_fast_orig), 16)
         y_interp = cs(x_interp)
         # Get the new interpolated kinematics without repeating points
-        fast_once_cycle_len = len([*data_fast_orig, *y_interp[2:-2]])
-        data_fast = [*data_fast_orig, *y_interp[2:-2]] * cycles
-    if stabilize:
-        data_fast = [*stable_points, *data_fast]
+        fast_once_cycle_len = len([*data_fast_orig, *y_interp[1:-1]])
+        data_fast = [*data_fast_orig, *y_interp[1:-1]] * cycles
     np.save('mouse_experiments/data/interp_fast', data_fast)
 
     # Data must start and end at same spot or there is jump
@@ -71,15 +74,13 @@ def preprocess(cycles=1, stabilize=False):
         y_interp = cs(x_interp)
         slow_once_cycle_len = len([*data_slow_orig, *y_interp[1:-1]])
         data_slow = [*data_slow_orig, *y_interp[1:-1]] * cycles
-    if stabilize:
-        data_slow = [*stable_points, *data_slow]
     np.save('mouse_experiments/data/interp_slow', data_slow)
 
     ############################ Data_1 ##############################
     mat = scipy.io.loadmat('data/kinematics_session_mean_alt1.mat')
     data = np.array(mat['kinematics_session_mean'][2])
     data_1_orig = data[226:406:1] * -1
-    data_1_orig = [-13.45250312, *data_1_orig[4:-3]]
+    data_1_orig = [-13.452503122486936, *data_1_orig[4:-3]]
     data_1 = [*data_1_orig] * cycles
     if cycles > 1:
         x = np.arange(0, len(data_1))
@@ -88,8 +89,6 @@ def preprocess(cycles=1, stabilize=False):
         y_interp = cs(x_interp)
         med_once_cycle_len = len([*data_1_orig, *y_interp[1:-1]])
         data_1 = [*data_1_orig, *y_interp[1:-1]] * cycles
-    if stabilize:
-        data_1 = [*stable_points, *data_1]
     np.save('mouse_experiments/data/interp_1', data_1)
 
     return data_fast, data_slow, data_1, fast_once_cycle_len, slow_once_cycle_len, med_once_cycle_len
@@ -98,7 +97,7 @@ def train_episode(mouseEnv, agent, policy_memory, episode_reward, episode_steps,
 
     done = False
     ### GET INITAL STATE + RESET MODEL BY POSE
-    state = mouseEnv.get_cur_state()
+    state = mouseEnv.get_start_state()
     ep_trajectory = []
 
     policy_loss_tracker = []
@@ -116,12 +115,7 @@ def train_episode(mouseEnv, agent, policy_memory, episode_reward, episode_steps,
         with torch.no_grad():
             action, h_current, c_current, _ = agent.select_action(state, h_prev, c_prev)  # Sample action from policy
         
-        # Change the threshold during training (must be for stabilization and cycles > 1)
-        # Just comment out for now if not using stabilization and cycles
-        if i < 50:
-            # smaller for stabilization
-            mouseEnv.threshold = 0.003
-        elif i >= 50 and i < one_cycle_len+50:
+        if i < one_cycle_len:
             # larger for first cycle
             mouseEnv.threshold = 0.0045
         else:
@@ -239,7 +233,7 @@ def main():
                         help='hidden size (default: 1000)')
     parser.add_argument('--updates_per_step', type=int, default=1, metavar='N',
                         help='model updates per simulator step (default: 1)')
-    parser.add_argument('--policy_replay_size', type=int, default=500000, metavar='N',
+    parser.add_argument('--policy_replay_size', type=int, default=7500, metavar='N',
                         help='size of replay buffer (default: 2800)')
     parser.add_argument('--cuda', action="store_true",
                         help='run on CUDA (default: False)')
@@ -259,21 +253,33 @@ def main():
                         help='There are two types: rnn or lstm. RNN uses multiple losses, LSTM is original implementation')
     parser.add_argument('--two_speeds', type=bool, default=False,
                         help='Only train on slow an medium speed, leave fast for testing')
-    parser.add_argument('--stabilize', type=bool, default=False,
-                        help='whether to have the mouse stabilize itself before movement')
     parser.add_argument('--cost_scale', type=float, default=0.0, metavar='G',
                         help='scaling of the cost, default: 0.0')
-    parser.add_argument('--cycles', type=int, default=3, metavar='N',
+    parser.add_argument('--cycles', type=int, default=2, metavar='N',
                         help='Number of times to cycle the kinematics (Default: 1)')
+    parser.add_argument('--training_desc', type=str, default='None', metavar='N',
+                        help='A description of the training procedure for a saved model')
     args = parser.parse_args()
 
     ###SIMULATION PARAMETERS###
     frame_skip = 1
     timestep = 170
 
+    ### DATA SET LOADING/PROCESSING ###
+    data_fast, data_slow, data_1, fast_cycle_len, slow_cycle_len, med_cycle_len = preprocess(args.cycles)
+    all_datasets = [data_fast, data_slow, data_1]
+    cycle_lens = [fast_cycle_len, slow_cycle_len, med_cycle_len]
+    dataset_names = ['data_fast', 'data_slow', 'data_1']
+    sim_timesteps = [150, 200, 250]
+    max_cycle_len = len(data_slow)
+
+    highest_reward_1 = -50
+    highest_reward_fast = -50
+    highest_reward_slow = -50
+
     ### CREATE ENVIRONMENT, AGENT, MEMORY ###
     if args.env_type == 'kin':
-        mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset, args.visualize, args.threshold, args.cost_scale)
+        mouseEnv = Mouse_Env(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset, args.visualize, args.threshold, args.cost_scale, max_cycle_len)
     elif args.env_type == 'sim':
         mouseEnv = Mouse_Env_Simulated(file_path, muscle_config_file, pose_file, frame_skip, ctrl, timestep, model_offset, args.visualize, args.threshold, args.cost_scale)
     else:
@@ -281,10 +287,10 @@ def main():
 
     if args.type == 'rnn':
         policy_memory = PolicyReplayMemoryRNN(args.policy_replay_size, args.seed)
-        agent = SACRNN(47, mouseEnv.action_space, args)
+        agent = SACRNN(46, mouseEnv.action_space, args)
     elif args.type == 'lstm':
         policy_memory = PolicyReplayMemoryLSTM(args.policy_replay_size, args.seed)
-        agent = SACLSTM(47, mouseEnv.action_space, args)
+        agent = SACLSTM(46, mouseEnv.action_space, args)
     else:
         raise NotImplementedError
 
@@ -307,17 +313,6 @@ def main():
 
     highest_reward = 0
 
-    ### DATA SET LOADING/PROCESSING ###
-    data_fast, data_slow, data_1, fast_cycle_len, slow_cycle_len, med_cycle_len = preprocess(args.cycles, args.stabilize)
-    all_datasets = [data_fast, data_slow, data_1]
-    cycle_lens = [fast_cycle_len, slow_cycle_len, med_cycle_len]
-    dataset_names = ['data_fast', 'data_slow', 'data_1']
-    sim_timesteps = [150, 200, 250]
-
-    highest_reward_1 = -50
-    highest_reward_fast = -50
-    highest_reward_slow = -50
-
     policy_loss_tracker = []
     policy_loss_2_tracker = []
     policy_loss_3_tracker = []
@@ -329,15 +324,18 @@ def main():
         episode_reward = 0
         episode_steps = 0
 
-        mouseEnv.reset(pose_file)
         # Select the speed based on environment type
         if args.env_type == 'kin':
             mouseEnv._max_episode_steps = len(all_datasets[i_episode % 3])
             mouseEnv.x_pos = all_datasets[i_episode % 3]
+            mouseEnv.avg_vel = get_avg_speed(mouseEnv.x_pos)
             data_curr = dataset_names[i_episode % 3]
             one_cycle_len = cycle_lens[i_episode % 3]
         elif args.env_type == 'sim':
             mouseEnv.timestep = sim_timesteps[i_episode % 3]
+        
+        # reset after changing the speed
+        mouseEnv.reset(pose_file)
 
         # Training
         if not args.test_model:
