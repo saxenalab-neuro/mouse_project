@@ -37,8 +37,8 @@ class PyBulletEnv(gym.Env):
 
         # This might need to change for simulated
         # This is for the target positon only
-        self.scale = 21
-        self.offset = -.713 # was -.713
+        self.scale = 20.98 # was 21
+        self.offset = -0.71598655 # was -.713 <---correct this, moved to 20.98
 
         self.muscle_config_file = muscle_config_file
         self.joint_id = {}

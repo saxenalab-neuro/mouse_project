@@ -1,11 +1,9 @@
 #can play around with values
 RShoulder_rotation: 0.0
 RShoulder_adduction: -20.0
-RShoulder_flexion: -26 # was -30, now -26
+RShoulder_flexion: -20 # was 26
 
-# -30 corresponds to the vel model, and 26 is newpos26 model
-
-RElbow_flexion: 85.0
+RElbow_flexion: 85.0 # was 85
 RElbow_supination: 0.0
 
 #RWrist_inversion: 0.0
