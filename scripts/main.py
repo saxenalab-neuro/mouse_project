@@ -216,7 +216,7 @@ def main():
                         help='discount factor for reward (default: 0.99)')
     parser.add_argument('--tau', type=float, default=0.005, metavar='G',
                         help='target smoothing coefficient(τ) (default: 0.005)')
-    parser.add_argument('--lr', type=float, default=0.0003, metavar='G',
+    parser.add_argument('--lr', type=float, default=0.001, metavar='G',
                         help='learning rate (default: 0.001)')
     parser.add_argument('--alpha', type=float, default=0.2, metavar='G',
                         help='Temperature parameter α determines the relative importance of the entropy\
@@ -233,7 +233,7 @@ def main():
                         help='hidden size (default: 1000)')
     parser.add_argument('--updates_per_step', type=int, default=1, metavar='N',
                         help='model updates per simulator step (default: 1)')
-    parser.add_argument('--policy_replay_size', type=int, default=7500, metavar='N',
+    parser.add_argument('--policy_replay_size', type=int, default=5000, metavar='N',
                         help='size of replay buffer (default: 2800)')
     parser.add_argument('--cuda', action="store_true",
                         help='run on CUDA (default: False)')
@@ -287,10 +287,10 @@ def main():
 
     if args.type == 'rnn':
         policy_memory = PolicyReplayMemoryRNN(args.policy_replay_size, args.seed)
-        agent = SACRNN(46, mouseEnv.action_space, args)
+        agent = SACRNN(45, mouseEnv.action_space, args)
     elif args.type == 'lstm':
         policy_memory = PolicyReplayMemoryLSTM(args.policy_replay_size, args.seed)
-        agent = SACLSTM(46, mouseEnv.action_space, args)
+        agent = SACLSTM(45, mouseEnv.action_space, args)
     else:
         raise NotImplementedError
 
@@ -328,7 +328,7 @@ def main():
         if args.env_type == 'kin':
             mouseEnv._max_episode_steps = len(all_datasets[i_episode % 3])
             mouseEnv.x_pos = all_datasets[i_episode % 3]
-            mouseEnv.avg_vel = get_avg_speed(mouseEnv.x_pos)
+            #mouseEnv.avg_vel = get_avg_speed(mouseEnv.x_pos)
             data_curr = dataset_names[i_episode % 3]
             one_cycle_len = cycle_lens[i_episode % 3]
         elif args.env_type == 'sim':

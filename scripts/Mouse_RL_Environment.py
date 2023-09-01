@@ -108,7 +108,7 @@ class Mouse_Env(PyBulletEnv):
         joint_velocities = []
         for i in range(len(self.ctrl)):
             joint_positions.append(p.getJointState(self.model, self.ctrl[i])[0])
-            joint_velocities.append(p.getJointState(self.model, self.ctrl[i])[1]/100)
+            joint_velocities.append(p.getJointState(self.model, self.ctrl[i])[1]*.01)
         joint_positions = [*list(np.array(joint_positions)), *list(p.getLinkState(self.model, 115, computeForwardKinematics=True)[0])] #(x, y, z)
         joint_velocities = [*list(np.array(joint_velocities)), *list(p.getLinkState(self.model, 115, computeForwardKinematics=True, computeLinkVelocity=True)[6])]
         return joint_positions, joint_velocities
@@ -116,19 +116,18 @@ class Mouse_Env(PyBulletEnv):
     def get_start_state(self):
         joint_positions, _ = self.get_joint_positions_and_velocities()
         _, distance = self.get_reward()
-        targ_vel_const = self.comp_targ_vel_const()
-        print(targ_vel_const)
-        return [*list(np.array(self.get_activations())), *list(np.array(joint_positions)), *[0.]*10, *list(np.array(self.target_pos)), 0., targ_vel_const, *list(np.array(distance))]
+        #targ_vel_const = self.comp_targ_vel_const()
+        return [*list(np.array(self.get_activations())), *list(np.array(joint_positions)), *[0.]*10, *list(np.array(self.target_pos)), 0., *list(np.array(distance))]
 
-    def update_state(self, act, joint_positions, joint_velocities, target_pos, target_velocity, target_vel_const, distances):
-        state = [*list(np.array(act)), *list(np.array(joint_positions)), *list(np.array(joint_velocities)), *list(np.array(target_pos)), target_velocity, target_vel_const, *list(np.array(distances))]
+    def update_state(self, act, joint_positions, joint_velocities, target_velocity, distances):
+        state = [*list(np.array(act)), *list(np.array(joint_positions)), *list(np.array(joint_velocities)), *list(np.array(self.target_pos)), target_velocity, *list(np.array(distances))]
         return state
     
     def comp_targ_vel_const(self, scaling=.25):
-        return 1/(1 + np.exp(-self.avg_vel*scaling))
+        return np.sinh(self.avg_vel*scaling)/np.cosh(self.avg_vel*scaling)
     
-    def comp_targ_vel(self, curr_target, prev_target):
-        return (curr_target - prev_target) / .001
+    def comp_targ_vel(self, prev_target):
+        return (self.target_pos - prev_target) / .001
     
     def step(self, forces, timestep):
 
@@ -137,7 +136,6 @@ class Mouse_Env(PyBulletEnv):
 
         prev_target = self.target_pos
         self.update_target_pos()
-        curr_target = self.target_pos
         
         self.controller_to_actuator(forces)
 
@@ -150,10 +148,10 @@ class Mouse_Env(PyBulletEnv):
         final_reward= 5*reward - (self.forces_scale*cost) 
 
         done = self.is_done()
-        target_vel = self.comp_targ_vel(curr_target, prev_target)
+        target_vel = self.comp_targ_vel(prev_target)
         joint_positions, joint_velocities = self.get_joint_positions_and_velocities()
-        target_vel_const = self.comp_targ_vel_const()
-        state = self.update_state(act, joint_positions, joint_velocities, curr_target, target_vel[0], target_vel_const, distances)
+        #target_vel_const = self.comp_targ_vel_const()
+        state = self.update_state(act, joint_positions, joint_velocities, target_vel[0], distances)
 
         return state, final_reward, done
 

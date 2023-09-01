@@ -1,7 +1,7 @@
 import os
 import torch
 import torch.nn.functional as F
-from torch.optim import Adam
+from torch.optim import Adam, AdamW, RMSprop
 from .utils1 import soft_update, hard_update
 from .model import GaussianPolicyLSTM, GaussianPolicyRNN, QNetworkFF, QNetworkLSTM
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence, pad_sequence
@@ -75,10 +75,10 @@ class SACRNN(SAC):
         self.critic_target = QNetworkFF(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
         hard_update(self.critic_target, self.critic)
 
-        self.critic_optim = Adam(self.critic.parameters(), lr=args.lr)
+        self.critic_optim = RMSprop(self.critic.parameters(), lr=args.lr, momentum=0)
 
         self.policy = GaussianPolicyRNN(num_inputs, action_space.shape[0], args.hidden_size, action_space=None).to(self.device)
-        self.policy_optim = Adam(self.policy.parameters(), lr=args.lr)
+        self.policy_optim = RMSprop(self.policy.parameters(), lr=args.lr, momentum=0)
 
     def select_action(self, state, h_prev, c_prev, evaluate=False):
 
@@ -171,7 +171,7 @@ class SACRNN(SAC):
 
         policy_loss_4 = torch.norm(J_in1)**2 + torch.norm(J_lstm_i)**2 + torch.norm(J_out1)**2 
 
-        policy_loss += (0.001*(policy_loss_2)) + (0.001*(policy_loss_3)) + (0.003*(policy_loss_4))
+        policy_loss += (0.001*(policy_loss_2)) + (0.001*(policy_loss_3)) + (0.001*(policy_loss_4))
 
         self.policy_optim.zero_grad()
         policy_loss.backward()
