@@ -4,6 +4,8 @@ import torch.nn.functional as F
 from torch.distributions import Normal
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence, pad_sequence
 import numpy as np
+import colorednoise as cn
+import math
 
 LOG_SIG_MAX = 2
 LOG_SIG_MIN = -20
@@ -48,6 +50,7 @@ class QNetworkFF(nn.Module):
         self.apply(weights_init_)
 
     def forward(self, state, action):
+
         xu = torch.cat([state, action], 1)
         
         x1 = F.relu(self.linear1(xu))
@@ -143,8 +146,9 @@ class GaussianPolicyRNN(nn.Module):
 
     def forward(self, state, h_prev, c_prev, sampling, len_seq= None):
 
-        x = F.relu(F.tanh(self.linear1(state)))
+        #x = F.relu(F.tanh(self.linear1(state)))
         #x = F.tanh(self.linear1(state))
+        x = F.relu(self.linear1(state))
 
         if sampling == False:
             assert len_seq!=None, "Proved the len_seq"
@@ -159,8 +163,7 @@ class GaussianPolicyRNN(nn.Module):
             x = x.squeeze(1)
 
         x = F.relu(x)
-        mean = F.tanh(self.mean_linear(x))
-        #mean = self.mean_linear(x)
+        mean = self.mean_linear(x)
         log_std = self.log_std_linear(x)
         log_std = torch.clamp(log_std, min=LOG_SIG_MIN, max=LOG_SIG_MAX)
 
@@ -185,17 +188,26 @@ class GaussianPolicyRNN(nn.Module):
                         else:
                             mask_seq = torch.cat((mask_seq, torch.tensor([False])), dim=0)
         #The mask has been created, Now filter the mean and sigma using this mask
+            print(mask_seq)
             mean = mean.reshape(-1, mean.size()[-1])[mask_seq]
             log_std = log_std.reshape(-1, log_std.size()[-1])[mask_seq]
         if sampling == True:
             mask_seq = [] #If sampling is True return a dummy mask seq
 
         std = log_std.exp()
+
+        # white noise
         normal = Normal(mean, std)
-        x_t = normal.rsample()
-        y_t = torch.tanh(x_t)
+        noise = normal.rsample()
+
+        # pink noise
+        #samples = math.prod(mean.squeeze().shape)
+        #noise = cn.powerlaw_psd_gaussian(1, samples)
+        #noise = torch.Tensor(noise).view(mean.shape).to(mean.device)
+
+        y_t = torch.tanh(noise) # reparameterization trick
         action = y_t * self.action_scale + self.action_bias
-        log_prob = normal.log_prob(x_t)
+        log_prob = normal.log_prob(noise)
         # Enforce the action_bounds
         log_prob -= torch.log(self.action_scale * (1 - y_t.pow(2)) + epsilon)
         log_prob = log_prob.sum(1, keepdim=True)
@@ -205,8 +217,9 @@ class GaussianPolicyRNN(nn.Module):
 
     def forward_for_simple_dynamics(self, state, h_prev, c_prev, sampling, len_seq= None):
 
-        x = F.relu(F.tanh(self.linear1(state)))
+        #x = F.relu(F.tanh(self.linear1(state)))
         #x = F.tanh(self.linear1(state))
+        x = F.relu(self.linear1(state))
 
         #Tap the output of the first linear layer
         x_l1 = x
@@ -236,7 +249,7 @@ class GaussianPolicyLSTM(nn.Module):
 
         self.linear1 = nn.Linear(num_inputs, hidden_dim)
         nn.init.xavier_normal_(self.linear1.weight)
-        self.lstm = nn.LSTM(num_inputs, hidden_dim, num_layers= 1, batch_first= True)
+        self.lstm = nn.LSTM(num_inputs, hidden_dim, num_layers=1, batch_first=True)
         self.linear2 = nn.Linear(2*hidden_dim, hidden_dim)
         nn.init.xavier_normal_(self.linear2.weight)
 

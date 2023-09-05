@@ -48,16 +48,16 @@ def preprocess(cycles):
     data_fast_orig = data[231:401:1] * -1
     data_fast_orig = [-13.452503122486936, *data_fast_orig[8:-1]]
     data_fast = [*data_fast_orig] * cycles
-    if cycles > 1:
-        # This needs to be done for smooth kinematics with cycles since they end at arbitrary points
-        x = np.arange(0, len(data_fast))
-        cs = Akima1DInterpolator(x, data_fast)
-        # end point of kinematics and start point of next cycle
-        x_interp = np.linspace(len(data_fast_orig)-1, len(data_fast_orig), 16)
-        y_interp = cs(x_interp)
-        # Get the new interpolated kinematics without repeating points
-        fast_once_cycle_len = len([*data_fast_orig, *y_interp[1:-1]])
-        data_fast = [*data_fast_orig, *y_interp[1:-1]] * cycles
+
+    # This needs to be done for smooth kinematics with cycles since they end at arbitrary points
+    x = np.arange(0, len(data_fast))
+    cs = Akima1DInterpolator(x, data_fast)
+    # end point of kinematics and start point of next cycle
+    x_interp = np.linspace(len(data_fast_orig)-1, len(data_fast_orig), 16)
+    y_interp = cs(x_interp)
+    # Get the new interpolated kinematics without repeating points
+    fast_once_cycle_len = len([*data_fast_orig, *y_interp[1:-1]])
+    data_fast = [*data_fast_orig, *y_interp[1:-1]] * cycles
     np.save('mouse_experiments/data/interp_fast', data_fast)
 
     # Data must start and end at same spot or there is jump
@@ -67,13 +67,13 @@ def preprocess(cycles):
     data_slow_orig = data[256:476:1] * -1
     data_slow_orig = [*data_slow_orig[:-6]]
     data_slow = [*data_slow_orig] * cycles
-    if cycles > 1:
-        x = np.arange(0, len(data_slow))
-        cs = Akima1DInterpolator(x, data_slow)
-        x_interp = np.linspace(len(data_slow_orig)-1, len(data_slow_orig), 5)
-        y_interp = cs(x_interp)
-        slow_once_cycle_len = len([*data_slow_orig, *y_interp[1:-1]])
-        data_slow = [*data_slow_orig, *y_interp[1:-1]] * cycles
+
+    x = np.arange(0, len(data_slow))
+    cs = Akima1DInterpolator(x, data_slow)
+    x_interp = np.linspace(len(data_slow_orig)-1, len(data_slow_orig), 5)
+    y_interp = cs(x_interp)
+    slow_once_cycle_len = len([*data_slow_orig, *y_interp[1:-1]])
+    data_slow = [*data_slow_orig, *y_interp[1:-1]] * cycles
     np.save('mouse_experiments/data/interp_slow', data_slow)
 
     ############################ Data_1 ##############################
@@ -82,13 +82,13 @@ def preprocess(cycles):
     data_1_orig = data[226:406:1] * -1
     data_1_orig = [-13.452503122486936, *data_1_orig[4:-3]]
     data_1 = [*data_1_orig] * cycles
-    if cycles > 1:
-        x = np.arange(0, len(data_1))
-        cs = Akima1DInterpolator(x, data_1)
-        x_interp = np.linspace(len(data_1_orig)-1, len(data_1_orig), 3)
-        y_interp = cs(x_interp)
-        med_once_cycle_len = len([*data_1_orig, *y_interp[1:-1]])
-        data_1 = [*data_1_orig, *y_interp[1:-1]] * cycles
+
+    x = np.arange(0, len(data_1))
+    cs = Akima1DInterpolator(x, data_1)
+    x_interp = np.linspace(len(data_1_orig)-1, len(data_1_orig), 3)
+    y_interp = cs(x_interp)
+    med_once_cycle_len = len([*data_1_orig, *y_interp[1:-1]])
+    data_1 = [*data_1_orig, *y_interp[1:-1]] * cycles
     np.save('mouse_experiments/data/interp_1', data_1)
 
     return data_fast, data_slow, data_1, fast_once_cycle_len, slow_once_cycle_len, med_once_cycle_len
@@ -113,14 +113,14 @@ def train_episode(mouseEnv, agent, policy_memory, episode_reward, episode_steps,
     for i in range(mouseEnv._max_episode_steps):
         
         with torch.no_grad():
-            action, h_current, c_current, _ = agent.select_action(state, h_prev, c_prev)  # Sample action from policy
+            action, h_current, c_current, _ = agent.select_action(state, h_prev, c_prev, evaluate=False)  # Sample action from policy
         
         if i < one_cycle_len:
             # larger for first cycle
-            mouseEnv.threshold = 0.0045
+            mouseEnv.threshold = 0.0035
         else:
             # tighter for other cycles
-            mouseEnv.threshold = 0.0035
+            mouseEnv.threshold = 0.003
 
         ### SIMULATION ###
         if len(policy_memory.buffer) > args.policy_batch_size:
@@ -142,6 +142,7 @@ def train_episode(mouseEnv, agent, policy_memory, episode_reward, episode_steps,
         ### TRACKING REWARD + EXPERIENCE TUPLE###
         next_state, reward, done = mouseEnv.step(action, i)
         episode_reward += reward
+        episode_steps += 1
 
         mask = 1 if episode_steps == mouseEnv._max_episode_steps else float(not done)
 
@@ -153,8 +154,6 @@ def train_episode(mouseEnv, agent, policy_memory, episode_reward, episode_steps,
         state = next_state
         h_prev = h_current
         c_prev = c_current
-
-        episode_steps += 1
         
         ### EARLY TERMINATION OF EPISODE
         if done:
@@ -184,7 +183,7 @@ def test(mouseEnv, agent, episode_reward, episode_steps, args):
         x_kinematics.append(hand_pos)
 
         with torch.no_grad():
-            action, h_current, c_current, lstm_out = agent.select_action(state, h_prev, c_prev)  # Sample action from policy
+            action, h_current, c_current, lstm_out = agent.select_action(state, h_prev, c_prev, evaluate=True)  # Sample action from policy
             lstm_out = np.squeeze(lstm_out)
             lstm_activity.append(lstm_out)
 

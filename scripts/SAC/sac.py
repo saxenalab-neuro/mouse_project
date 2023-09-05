@@ -14,7 +14,7 @@ class SAC(object):
         self.alpha = args.alpha
         self.hidden_size= args.hidden_size
         self.automatic_entropy_tuning = args.automatic_entropy_tuning
-        self.device = torch.device("cuda" if args.cuda else "cpu")
+        self.device = torch.device("cuda")
 
         # Target Entropy = −dim(A) (e.g. , -6 for HalfCheetah-v2) as given in the paper
         if args.automatic_entropy_tuning:
@@ -75,18 +75,21 @@ class SACRNN(SAC):
         self.critic_target = QNetworkFF(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
         hard_update(self.critic_target, self.critic)
 
-        self.critic_optim = RMSprop(self.critic.parameters(), lr=args.lr, momentum=0)
+        self.critic_optim = Adam(self.critic.parameters(), lr=args.lr)
 
         self.policy = GaussianPolicyRNN(num_inputs, action_space.shape[0], args.hidden_size, action_space=None).to(self.device)
-        self.policy_optim = RMSprop(self.policy.parameters(), lr=args.lr, momentum=0)
+        self.policy_optim = Adam(self.policy.parameters(), lr=args.lr)
 
     def select_action(self, state, h_prev, c_prev, evaluate=False):
 
         state = torch.FloatTensor(state).to(self.device).unsqueeze(0).unsqueeze(0)
         h_prev = h_prev.to(self.device)
         c_prev = c_prev.to(self.device)
-        
-        action, _, _, h_current, c_current, _, lstm_out = self.policy.sample(state, h_prev, c_prev, sampling=True, len_seq=None)
+
+        if evaluate == False: 
+            action, _, _, h_current, c_current, _, lstm_out = self.policy.sample(state, h_prev, c_prev, sampling=True, len_seq=None)
+        else:
+            _, _, action, h_current, c_current, _, lstm_out = self.policy.sample(state, h_prev, c_prev, sampling=True, len_seq=None)
 
         return action.detach().cpu().numpy()[0], h_current.detach(), c_current.detach(), lstm_out.detach().cpu().numpy()
 
@@ -171,7 +174,7 @@ class SACRNN(SAC):
 
         policy_loss_4 = torch.norm(J_in1)**2 + torch.norm(J_lstm_i)**2 + torch.norm(J_out1)**2 
 
-        policy_loss += (0.001*(policy_loss_2)) + (0.001*(policy_loss_3)) + (0.001*(policy_loss_4))
+        policy_loss += (0.003*(policy_loss_2)) + (0.001*(policy_loss_3)) + (0.001*(policy_loss_4))
 
         self.policy_optim.zero_grad()
         policy_loss.backward()
@@ -214,7 +217,10 @@ class SACLSTM(SAC):
         h_prev = h_prev.to(self.device)
         c_prev = c_prev.to(self.device)
         
-        action, _, _, h_current, c_current, lstm_out = self.policy.sample(state, h_prev, c_prev, sampling=True)
+        if evaluate == False:
+            action, _, _, h_current, c_current, lstm_out = self.policy.sample(state, h_prev, c_prev, sampling=True)
+        else:
+            _, _, action, h_current, c_current, lstm_out = self.policy.sample(state, h_prev, c_prev, sampling=True)
 
         return action.detach().cpu().numpy()[0], h_current.detach(), c_current.detach(), lstm_out.detach().cpu().numpy()
 
